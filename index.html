@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>商業創意產生器 · 關鍵字組合生成商業點子＋五構面評分</title>
+<meta name="theme-color" content="#34d399">
+<style>
+  :root{
+    --bg:#0a140f;
+    --bg-alt:#0f1f16;
+    --panel:#13261b;
+    --panel-raised:#1a3324;
+    --line:#25462f;
+    --line-soft:#1c3323;
+    --text:#eaf5ee;
+    --text-dim:#a8c9b6;
+    --text-faint:#6f9280;
+    --accent:#34d399;
+    --accent-soft:rgba(52,211,153,0.14);
+    --accent-glow:rgba(52,211,153,0.5);
+    --violet:#a78bfa;
+    --violet-soft:rgba(167,139,250,0.14);
+    --cyan:#38bdf8;
+    --amber:#fbbf24;
+    --red:#f87171;
+    --font-mono:ui-monospace,"Cascadia Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    --font-sans:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;background:var(--bg);color:var(--text);font-family:var(--font-sans);line-height:1.65;min-height:100vh;
+    background-image:
+      linear-gradient(rgba(52,211,153,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(52,211,153,0.035) 1px, transparent 1px);
+    background-size:34px 34px;
+  }
+  a{color:var(--accent);}
+  ::selection{background:var(--accent);color:#04120c;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .btn{
+    font-family:var(--font-mono);font-size:13px;letter-spacing:.02em;
+    background:var(--panel-raised);color:var(--text);border:1px solid var(--line);
+    padding:9px 16px;border-radius:6px;cursor:pointer;transition:.15s;
+  }
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.primary{background:var(--accent);color:#04120c;border-color:var(--accent);font-weight:700;}
+  .btn.primary:hover{background:#5fe0af;color:#04120c;box-shadow:0 0 16px var(--accent-glow);}
+  .btn.violet{background:var(--violet);color:#1b1330;border-color:var(--violet);font-weight:700;}
+  .btn.violet:hover{background:#bda6fc;box-shadow:0 0 16px rgba(167,139,250,.5);}
+  .btn.ghost{background:transparent;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn:disabled:hover{border-color:var(--line);color:var(--text);box-shadow:none;}
+
+  /* ---------- 頂部跑馬燈 ---------- */
+  #marqueeBar{position:fixed;top:0;left:0;right:0;height:30px;background:var(--panel);border-bottom:1px solid var(--line);z-index:2100;overflow:hidden;display:none;align-items:center}
+  #marqueeBar.show{display:flex}
+  #marqueeTrack{display:inline-block;white-space:nowrap;padding-left:100%;font-size:13px;font-weight:600;color:var(--accent);animation:marquee-scroll 30s linear infinite}
+  body.has-marquee{padding-top:30px}
+  body.has-marquee .topbar{top:30px}
+  @keyframes marquee-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+  /* ---------- 序號授權閘門 ---------- */
+  #licenseGate{position:fixed;inset:0;background:rgba(6,14,10,.95);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px}
+  #licenseGate.hidden{display:none}
+  .gate-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:32px;width:420px;max-width:92vw;text-align:center}
+  .gate-logo{font-size:20px;font-weight:700;margin-bottom:8px}
+  .gate-logo span{color:var(--accent)}
+  .gate-desc{font-size:13px;color:var(--text-dim);margin-bottom:20px;line-height:1.7}
+  .gate-row{display:flex;gap:8px;margin-bottom:14px}
+  .gate-row input{flex:1;min-width:0}
+  .gate-row button{flex:none}
+  .gate-status{display:block;font-size:12.5px;font-weight:600;padding:8px 10px;border-radius:8px;background:var(--bg);color:var(--text-dim)}
+  .gate-status.ok{background:var(--accent-soft);color:var(--accent)}
+  .gate-status.bad{background:rgba(248,113,113,.12);color:var(--red)}
+  .gate-status.pending{opacity:.85}
+  .license-badge{font-family:var(--font-mono);font-size:12px;font-weight:700;padding:6px 12px;border-radius:6px;background:var(--accent-soft);color:var(--accent);white-space:nowrap;}
+  .license-badge.warn{background:rgba(251,191,36,.14);color:#fbbf24;}
+
+  input[type=text], input[type=password], textarea, select{
+    width:100%;background:var(--bg-alt);color:var(--text);border:1px solid var(--line);
+    border-radius:8px;padding:10px 12px;font-family:var(--font-sans);font-size:14px;
+  }
+  input:focus, textarea:focus, select:focus{border-color:var(--accent);}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;padding:16px 24px;
+    border-bottom:1px solid var(--line-soft);background:linear-gradient(180deg, var(--bg-alt), var(--bg));
+    position:sticky;top:0;z-index:20;backdrop-filter:blur(6px);
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);letter-spacing:.04em;}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent-glow);}
+  .brand strong{font-size:15px;font-weight:700;}
+  .topbar nav a{font-family:var(--font-mono);font-size:13px;color:var(--text-dim);text-decoration:none;border:1px solid var(--line);padding:7px 14px;border-radius:6px;transition:.15s;}
+  .topbar nav a:hover{color:var(--accent);border-color:var(--accent);}
+
+  /* ---------- hero ---------- */
+  .hero{padding:48px 24px 30px;text-align:center;border-bottom:1px solid var(--line-soft);background:linear-gradient(180deg, var(--bg-alt), var(--bg));}
+  .hero .eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:.3em;color:var(--text-faint);text-transform:uppercase;margin-bottom:14px;}
+  .hero h1{font-size:clamp(24px,4.5vw,38px);margin:0 0 12px;font-weight:800;letter-spacing:-.01em;}
+  .hero h1 .accent{color:var(--accent);}
+  .hero p.lead{max-width:600px;margin:0 auto;color:var(--text-dim);font-size:15.5px;}
+
+  main{max-width:820px;margin:0 auto;padding:34px 20px 60px;display:flex;flex-direction:column;gap:22px;}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .panel-title{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;}
+  .panel-title .badge{
+    width:28px;height:28px;border-radius:8px;background:var(--accent-soft);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:13px;font-weight:800;
+  }
+  .panel-hint{font-size:12.5px;color:var(--text-faint);margin:0 0 16px;}
+
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:13px;font-weight:700;color:var(--text-dim);margin-bottom:6px;}
+
+  .example-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .example-btn{
+    font-family:var(--font-sans);font-size:12.5px;
+    background:var(--bg-alt);color:var(--text-dim);border:1px solid var(--line);
+    padding:7px 13px;border-radius:999px;cursor:pointer;transition:.15s;
+  }
+  .example-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+  /* ---------- 關鍵字2 抽出結果 ---------- */
+  .kw2-box{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .kw2-badge{
+    display:flex;align-items:baseline;gap:8px;background:var(--bg-alt);border:1px solid var(--line);
+    border-radius:10px;padding:14px 20px;font-size:20px;font-weight:800;flex:1;min-width:180px;
+  }
+  .kw2-badge strong{color:var(--accent);}
+  .kw2-cat{font-family:var(--font-mono);font-size:11.5px;font-weight:600;color:var(--text-faint);border:1px solid var(--line);border-radius:999px;padding:2px 10px;}
+
+  /* ---------- AI 面板 ---------- */
+  .ai-panel{border-color:rgba(167,139,250,.35);}
+  .ai-panel .panel-title .badge{background:var(--violet-soft);color:var(--violet);}
+  .api-settings{margin-bottom:14px;}
+  .api-settings summary{cursor:pointer;font-family:var(--font-mono);font-size:12.5px;color:var(--text-dim);}
+  .api-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+  .api-grid label{grid-column:span 1;font-size:12px;color:var(--text-faint);display:block;}
+  .api-grid label.full{grid-column:1 / -1;}
+  .api-note{font-size:11.5px;color:var(--text-faint);margin-top:8px;line-height:1.6;}
+  .gen-report{margin-top:10px;font-size:12.5px;}
+  .gen-report .ok{color:var(--accent);}
+  .gen-report .warn{color:#facc15;}
+  .gen-report .bad{color:var(--red);}
+
+  .cta-row{display:flex;gap:10px;flex-wrap:wrap;}
+
+  /* ---------- 結果：創意卡片 ---------- */
+  #resultPanel{display:none;}
+  .source-badge{
+    display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11.5px;
+    background:rgba(251,191,36,.14);color:var(--amber);border:1px solid rgba(251,191,36,.4);
+    border-radius:999px;padding:4px 12px;margin-bottom:14px;
+  }
+  .missing-note{
+    font-size:12px;color:var(--text-faint);background:var(--bg-alt);border:1px solid var(--line-soft);
+    border-radius:8px;padding:8px 12px;margin-bottom:14px;display:none;
+  }
+  .idea-name{font-size:22px;font-weight:800;margin:0 0 10px;color:var(--text);}
+  .idea-desc{font-size:14.5px;color:var(--text-dim);margin:0 0 18px;line-height:1.8;}
+  .idea-steps{margin:0 0 4px;padding-left:0;list-style:none;counter-reset:step;}
+  .idea-steps li{
+    counter-increment:step;position:relative;padding:10px 14px 10px 44px;margin-bottom:8px;
+    background:var(--bg-alt);border:1px solid var(--line-soft);border-radius:8px;font-size:13.5px;color:var(--text-dim);line-height:1.6;
+  }
+  .idea-steps li::before{
+    content:counter(step);position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);
+    font-family:var(--font-mono);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;
+  }
+
+  /* ---------- 五構面評分 + 總分儀表 ---------- */
+  .score-hero{display:flex;align-items:center;gap:28px;flex-wrap:wrap;margin:20px 0 20px;}
+  .gauge-wrap{position:relative;width:140px;height:140px;flex-shrink:0;}
+  .gauge-svg{width:140px;height:140px;transform:rotate(-90deg);}
+  .gauge-track{fill:none;stroke:var(--line);stroke-width:10;}
+  .gauge-fill{fill:none;stroke:var(--accent);stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .8s ease, stroke .3s ease;}
+  .gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .gauge-score{font-family:var(--font-mono);font-size:30px;font-weight:800;line-height:1;}
+  .gauge-score-unit{font-family:var(--font-mono);font-size:12px;color:var(--text-faint);margin-top:2px;}
+  .gauge-grade{font-family:var(--font-mono);font-size:13px;color:var(--text-dim);margin-top:4px;letter-spacing:.06em;padding:2px 10px;border-radius:999px;border:1px solid var(--line);}
+  .score-summary{flex:1;min-width:200px;}
+  .summary-label{font-family:var(--font-mono);font-size:12px;color:var(--text-faint);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;}
+  .summary-text{font-size:14px;color:var(--text-dim);margin:0;line-height:1.7;}
+
+  .grade-a{color:var(--accent);border-color:var(--accent);}
+  .grade-b{color:var(--cyan);border-color:var(--cyan);}
+  .grade-c{color:var(--amber);border-color:var(--amber);}
+  .grade-d{color:var(--red);border-color:var(--red);}
+
+  .dim-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;}
+  .dim-card{background:var(--bg-alt);border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .dim-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .dim-title{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700;}
+  .dim-icon{font-size:15px;}
+  .dim-score{font-family:var(--font-mono);font-size:14px;font-weight:800;}
+  .dim-bar-track{height:6px;border-radius:99px;background:var(--line-soft);overflow:hidden;margin-bottom:10px;}
+  .dim-bar-fill{height:100%;border-radius:99px;transition:width .6s ease;}
+  .dim-reason{font-size:12.5px;color:var(--text-dim);margin:0;line-height:1.65;}
+  .dim-card[data-source="rule"] .dim-head::after{content:'規則式';font-family:var(--font-mono);font-size:10px;color:var(--text-faint);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin-left:auto;}
+
+  footer{max-width:820px;margin:0 auto;padding:0 20px 50px;}
+  .warn-box{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;font-size:12.5px;color:var(--text-dim);}
+  .warn-box strong{color:var(--text);display:block;margin-bottom:8px;font-size:13px;}
+  .warn-box ul{margin:0;padding-left:18px;}
+  .warn-box li{margin-bottom:5px;}
+  .creator-box{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 20px;margin-bottom:16px;font-size:12.5px;color:var(--text-dim);}
+  .creator-box strong{color:var(--text);}
+  .footer-meta{max-width:820px;margin:0 auto;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12.5px;color:var(--text-faint);font-family:var(--font-mono);}
+  .footer-meta a{color:var(--text-dim);}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--panel-raised);border:1px solid var(--accent);color:var(--text);padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:3000;}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+
+  @media (max-width:600px){
+    .api-grid{grid-template-columns:1fr;}
+    .cta-row .btn{flex:1 1 auto;text-align:center;}
+  }
+</style>
+</head>
+<body>
+
+<div id="marqueeBar"><div id="marqueeTrack"></div></div>
+
+<div id="licenseGate">
+  <div class="gate-box">
+    <div class="gate-logo">💡 <span>商業創意產生器</span></div>
+    <div class="gate-desc">本工具需輸入授權序號並按「確認」驗證通過後才能使用。序號自第一次驗證起提供 12 個月使用期限。</div>
+    <div class="gate-row">
+      <input type="password" id="gateSerial" placeholder="請輸入授權序號" autocomplete="off">
+      <button type="button" class="btn" id="btnGateToggle" title="顯示／隱藏序號" aria-label="顯示／隱藏序號">👁</button>
+    </div>
+    <button type="button" class="btn primary" id="btnGateConfirm" style="width:100%;margin-bottom:12px">確認</button>
+    <span id="gateStatus" class="gate-status pending">尚未驗證</span>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span><strong>商業創意產生器</strong></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span id="licenseBadge" class="license-badge" style="display:none;"></span>
+    <nav><a href="manual.html">操作手冊</a></nav>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="eyebrow">BUSINESS IDEA GENERATOR</div>
+  <h1>兩個關鍵字，<span class="accent">組出一個商業創意</span></h1>
+  <p class="lead">輸入一個關鍵字，系統隨機抽出另一個名詞，把兩者結合成一個商業創意——含逐步打造步驟，並用市場需求／收益性／競爭優勢／可擴展性／社會影響五個構面各自評分＋理由＋總平均分。</p>
+</div>
+
+<main>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="panel-title"><span class="badge">1</span>輸入關鍵字1</div>
+    </div>
+    <p class="panel-hint">填一個你熟悉的產業、商品或服務關鍵字（例如「咖啡」），也可以直接點下面的快速範例。</p>
+    <div class="field">
+      <input type="text" id="kw1Input" maxlength="30" placeholder="例如：咖啡、寵物、露營…">
+    </div>
+    <div class="example-row" id="kw1Examples"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="panel-title"><span class="badge">2</span>隨機抽出的關鍵字2</div>
+    </div>
+    <p class="panel-hint">系統從內建名詞庫隨機抽出一個名詞，跟關鍵字1組合成商業創意。不滿意可以重新抽一次。</p>
+    <div class="kw2-box">
+      <div class="kw2-badge" id="kw2Badge">尚未抽出</div>
+      <button type="button" class="btn" id="redrawBtn">🎲 重新抽一個</button>
+    </div>
+  </section>
+
+  <section class="panel ai-panel">
+    <div class="panel-head">
+      <div class="panel-title"><span class="badge">AI</span>AI 連線設定（選填）</div>
+    </div>
+    <p class="panel-hint">不填也能用——沒有金鑰時會產生示範版本（規則式，非AI）。想要更貼切、更有創意的內容與評分理由，可填入你自己的語言模型 API 金鑰。</p>
+
+    <details class="api-settings">
+      <summary>API 連線設定</summary>
+      <div class="api-grid">
+        <label>服務商
+          <select id="aiProvider"></select>
+        </label>
+        <label>模型
+          <input type="text" id="aiModel" placeholder="模型名稱">
+        </label>
+        <label class="full">API 金鑰
+          <input type="password" id="aiKey" placeholder="貼上你的 API Key（留空使用示範版本）" autocomplete="off">
+        </label>
+      </div>
+      <p class="api-note">金鑰只存在這台電腦的瀏覽器（localStorage），不會送到本工具以外的任何地方；按下「產生商業創意」時，若有填金鑰才會把關鍵字直接傳送給你選擇的服務商 API。請勿在共用電腦上填寫金鑰。</p>
+    </details>
+
+    <div class="cta-row">
+      <button class="btn primary" id="generateBtn" type="button">✨ 產生商業創意</button>
+      <button class="btn ghost" id="regenerateBtn" type="button" style="display:none;">🔄 重新產生</button>
+    </div>
+    <div id="genReport" class="gen-report" aria-live="polite"></div>
+  </section>
+
+  <section class="panel" id="resultPanel">
+    <div class="panel-head">
+      <div class="panel-title"><span class="badge">✓</span>商業創意結果</div>
+    </div>
+    <div class="source-badge" id="sourceBadge" style="display:none;">⚙️ 示範版本，未使用AI</div>
+    <div class="missing-note" id="missingNote"></div>
+
+    <h2 class="idea-name" id="ideaName"></h2>
+    <p class="idea-desc" id="ideaDesc"></p>
+    <ol class="idea-steps" id="ideaSteps"></ol>
+
+    <div class="score-hero">
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" viewBox="0 0 120 120">
+          <circle class="gauge-track" cx="60" cy="60" r="52"></circle>
+          <circle class="gauge-fill" id="gaugeFill" cx="60" cy="60" r="52"></circle>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-score" id="gaugeScore">--</div>
+          <div class="gauge-score-unit">/ 5.0</div>
+          <div class="gauge-grade" id="gaugeGrade">尚未評分</div>
+        </div>
+      </div>
+      <div class="score-summary">
+        <div class="summary-label">五構面總平均</div>
+        <p class="summary-text">由市場需求／收益性／競爭優勢／可擴展性／社會影響五項分數算術平均而得（前端自行計算，不採信AI回傳的總分）。</p>
+      </div>
+    </div>
+
+    <div class="dim-grid" id="dimGrid"></div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="warn-box">
+    <strong>使用警語</strong>
+    <ul>
+      <li>本工具產生的商業創意與評分僅供發想參考，不構成任何投資、創業或商業決策建議，請自行查證市場可行性。</li>
+      <li>請勿在任何欄位輸入真實個資、機密資料或受著作權保護的他人內容——欄位資料只存在你自己瀏覽器的 localStorage，不會上傳到任何伺服器。</li>
+      <li>「產生商業創意」在填有 API 金鑰時會直接連線到你選擇的服務商，該金鑰只存在你的瀏覽器，本工具不會經手或保存金鑰，也不會向你收取任何 API 費用——實際費用依你與該服務商的方案計算。</li>
+      <li>AI 生成內容可能有誤，使用前請自行查證；本工具與創作者不對後續 AI 輸出結果負責。</li>
+      <li>僅供教學、課程及個人使用，禁止未經授權公開發布、販售或商業化使用。</li>
+    </ul>
+  </div>
+  <div class="creator-box">製作：<strong>Mark Tsai（蔡豐全）</strong>｜<a href="mailto:tsaimark@gmail.com">tsaimark@gmail.com</a>｜完整經歷見<a href="manual.html">操作手冊</a></div>
+  <div class="footer-meta">
+    <span>© 2026 商業創意產生器</span>
+    <a href="manual.html">操作手冊 →</a>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ================= 頂部跑馬燈（獨立運作，跟下方主程式邏輯無關；共用工作區既有的公告 Google Sheet） ================= */
+(function () {
+  'use strict';
+  var MARQUEE_CHECK_URL = "https://script.google.com/macros/s/AKfycbwKX0DNNbY8y4nf90BFTHtxgfqJcHHcZasRrgycl4QAe52_hkjMWSkYk4xOsqU-JPCROw/exec";
+  var STORAGE_KEY = 'bizIdeaMarquee';
+  var REFRESH_MS = 20 * 60 * 1000;
+
+  var bar = document.getElementById('marqueeBar');
+  var track = document.getElementById('marqueeTrack');
+  var lastKey = null;
+
+  function loadCache() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function saveCache(items) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) {}
+  }
+  function appendParsedText(container, text) {
+    var re = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+    var lastIndex = 0, m;
+    while ((m = re.exec(text))) {
+      if (m.index > lastIndex) container.appendChild(document.createTextNode(text.slice(lastIndex, m.index)));
+      var a = document.createElement('a');
+      a.href = m[2];
+      a.textContent = m[1];
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.style.color = 'inherit';
+      a.style.textDecoration = 'underline';
+      container.appendChild(a);
+      lastIndex = re.lastIndex;
+    }
+    if (lastIndex < text.length) container.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
+  function buildTrackContent(items) {
+    var frag = document.createDocumentFragment();
+    function appendPass() {
+      items.forEach(function (item, idx) {
+        if (idx > 0) frag.appendChild(document.createTextNode('　★　'));
+        appendParsedText(frag, item);
+      });
+    }
+    appendPass();
+    frag.appendChild(document.createTextNode('　★　'));
+    appendPass();
+    return frag;
+  }
+  function render(items) {
+    if (!items || !items.length) return;
+    var key = JSON.stringify(items);
+    if (key === lastKey) return;
+    lastKey = key;
+    track.innerHTML = '';
+    track.appendChild(buildTrackContent(items));
+    bar.classList.add('show');
+    document.body.classList.add('has-marquee');
+    var width = track.scrollWidth / 2;
+    track.style.animationDuration = Math.max(width / 80, 10) + 's';
+  }
+  function fetchMarquee() {
+    fetch(MARQUEE_CHECK_URL, { method: 'POST', body: JSON.stringify({ serial: '' }) })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data && Array.isArray(data.marquee) && data.marquee.length) {
+          saveCache(data.marquee);
+          render(data.marquee);
+        }
+      })
+      .catch(function () {});
+  }
+
+  render(loadCache());
+  fetchMarquee();
+  setInterval(fetchMarquee, REFRESH_MS);
+})();
+
+/* ================= 序號授權閘門（獨立運作，鎖定整個工具；跟下方主程式邏輯無關） ================= */
+(function () {
+  'use strict';
+  var LICENSE_CHECK_URL = "https://script.google.com/macros/s/AKfycbzjrCMAxLK9MkIJC8BmVEU7UwSgJ3F8hbMfGkU8ULk82a6evOfPHeqRvrgS5SCFYxUB9g/exec";
+  var STORAGE_KEY = 'bizIdeaSerial';
+  var RECHECK_MS = 20 * 60 * 1000;
+
+  var gate = document.getElementById('licenseGate');
+  var input = document.getElementById('gateSerial');
+  var toggleBtn = document.getElementById('btnGateToggle');
+  var confirmBtn = document.getElementById('btnGateConfirm');
+  var statusEl = document.getElementById('gateStatus');
+  var badgeEl = document.getElementById('licenseBadge');
+
+  function loadSerial() { return localStorage.getItem(STORAGE_KEY) || ''; }
+  function saveSerial(s) { localStorage.setItem(STORAGE_KEY, s); }
+
+  var REASON_LABEL = {
+    missing_serial: '請輸入授權序號',
+    serial_not_found: '查無此授權序號，請確認輸入是否正確',
+    expired: '此序號已逾使用期限',
+    network_error: '無法連線授權伺服器，請檢查網路連線',
+    server_error: '授權伺服器發生錯誤，請稍後再試'
+  };
+
+  function checkLicense(serial, attempt) {
+    attempt = attempt || 1;
+    if (!LICENSE_CHECK_URL) {
+      return Promise.reject(new Error('尚未設定授權伺服器網址，請聯繫工具提供者'));
+    }
+    return fetch(LICENSE_CHECK_URL, {
+      method: 'POST',
+      body: JSON.stringify({ serial: serial }),
+      signal: AbortSignal.timeout(40000)
+    }).catch(function (err) {
+      throw new Error(err.name === 'TimeoutError' ? '授權伺服器回應時間較長，請稍候片刻後再試一次' : '無法連線授權伺服器，請檢查網路連線');
+    }).then(function (resp) {
+      if (!resp.ok) throw new Error('授權伺服器回應異常（' + resp.status + '）');
+      return resp.text();
+    }).then(function (text) {
+      var parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch (e) {
+        parsed = null;
+      }
+      if (!parsed || typeof parsed.valid !== 'boolean') {
+        if (attempt < 3) return checkLicense(serial, attempt + 1);
+        throw new Error('授權伺服器回應異常，請稍後再試一次');
+      }
+      return parsed;
+    });
+  }
+
+  function daysLeft(license) {
+    if (!license.expiresAt) return null;
+    return Math.ceil((new Date(license.expiresAt) - new Date()) / 86400000);
+  }
+  function fmtDays(license) {
+    if (!license.expiresAt) return '';
+    var expireStr = new Date(license.expiresAt).toLocaleDateString();
+    var days = daysLeft(license);
+    return '剩餘 ' + Math.max(days, 0) + ' 天可用（至 ' + expireStr + '）';
+  }
+
+  function updateBadge(license) {
+    if (!badgeEl) return;
+    var days = daysLeft(license);
+    if (days === null) { badgeEl.style.display = 'none'; return; }
+    badgeEl.textContent = '🔑 剩餘 ' + Math.max(days, 0) + ' 天';
+    badgeEl.title = '授權序號使用期限至 ' + new Date(license.expiresAt).toLocaleDateString();
+    badgeEl.className = 'license-badge' + (days <= 7 ? ' warn' : '');
+    badgeEl.style.display = 'inline-block';
+  }
+
+  function unlock(license) {
+    var label = fmtDays(license) || '序號有效';
+    statusEl.className = 'gate-status ok';
+    statusEl.textContent = '✓ ' + label;
+    gate.classList.add('hidden');
+    updateBadge(license);
+  }
+
+  function lock(reasonText) {
+    statusEl.className = 'gate-status bad';
+    statusEl.textContent = '✗ ' + reasonText;
+    gate.classList.remove('hidden');
+    if (badgeEl) badgeEl.style.display = 'none';
+  }
+
+  function runCheck(serial, opts) {
+    opts = opts || {};
+    if (!serial) {
+      statusEl.className = 'gate-status bad';
+      statusEl.textContent = REASON_LABEL.missing_serial;
+      return Promise.resolve({ valid: false, reason: 'missing_serial' });
+    }
+    if (!opts.silent) {
+      statusEl.className = 'gate-status pending';
+      statusEl.textContent = '驗證中…';
+    }
+    return checkLicense(serial).then(function (license) {
+      if (license.valid) unlock(license);
+      else lock(REASON_LABEL[license.reason] || license.message || '授權序號驗證失敗');
+      return license;
+    }).catch(function (err) {
+      lock(err.message);
+      return { valid: false, reason: 'network_error', message: err.message };
+    });
+  }
+
+  confirmBtn.addEventListener('click', function () {
+    var serial = input.value.trim();
+    saveSerial(serial);
+    runCheck(serial);
+  });
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); confirmBtn.click(); }
+  });
+  toggleBtn.addEventListener('click', function () {
+    input.type = input.type === 'password' ? 'text' : 'password';
+  });
+
+  input.value = loadSerial();
+  if (input.value) runCheck(input.value, { silent: true });
+
+  setInterval(function () {
+    var serial = loadSerial();
+    if (serial) runCheck(serial, { silent: true });
+  }, RECHECK_MS);
+})();
+
+/* ================= 主程式：關鍵字組合／規則式與AI生成／五構面評分 ================= */
+(function(){
+  'use strict';
+  function $(id){ return document.getElementById(id); }
+  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+  function isLatin1(s){ for(var i=0;i<s.length;i++){ if(s.charCodeAt(i) > 0xFF) return false; } return true; }
+
+  function showToast(msg){
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(function(){ t.classList.remove('show'); }, 2400);
+  }
+
+  /* ---------- 名詞庫（關鍵字2），8大類，共76個 ---------- */
+  var NOUN_BANK = [
+    {word:'貓咪',category:'動物'},{word:'企鵝',category:'動物'},{word:'章魚',category:'動物'},
+    {word:'蜜蜂',category:'動物'},{word:'狐狸',category:'動物'},{word:'貓頭鷹',category:'動物'},
+    {word:'水獺',category:'動物'},{word:'刺蝟',category:'動物'},{word:'飛鼠',category:'動物'},{word:'螢火蟲',category:'動物'},
+
+    {word:'無人機',category:'科技'},{word:'機器人',category:'科技'},{word:'區塊鏈',category:'科技'},
+    {word:'AR眼鏡',category:'科技'},{word:'3D列印機',category:'科技'},{word:'智慧手錶',category:'科技'},
+    {word:'語音助理',category:'科技'},{word:'感測器',category:'科技'},{word:'太陽能板',category:'科技'},{word:'全息投影',category:'科技'},
+
+    {word:'瀑布',category:'自然'},{word:'極光',category:'自然'},{word:'沙漠',category:'自然'},
+    {word:'月亮',category:'自然'},{word:'雷雨',category:'自然'},{word:'珊瑚礁',category:'自然'},
+    {word:'冰川',category:'自然'},{word:'溫泉',category:'自然'},{word:'螢光海',category:'自然'},{word:'候鳥',category:'自然'},
+
+    {word:'太空人',category:'職業'},{word:'消防員',category:'職業'},{word:'魔術師',category:'職業'},
+    {word:'園丁',category:'職業'},{word:'調酒師',category:'職業'},{word:'攝影師',category:'職業'},
+    {word:'郵差',category:'職業'},{word:'獸醫',category:'職業'},{word:'燈塔看守員',category:'職業'},
+
+    {word:'鬧鐘',category:'日常物品'},{word:'雨傘',category:'日常物品'},{word:'行李箱',category:'日常物品'},
+    {word:'便當盒',category:'日常物品'},{word:'老花眼鏡',category:'日常物品'},{word:'縫紉機',category:'日常物品'},
+    {word:'隨身杯',category:'日常物品'},{word:'曬衣夾',category:'日常物品'},{word:'麻繩',category:'日常物品'},{word:'玻璃罐',category:'日常物品'},
+
+    {word:'孤獨',category:'抽象概念'},{word:'勇氣',category:'抽象概念'},{word:'鄉愁',category:'抽象概念'},
+    {word:'儀式感',category:'抽象概念'},{word:'巧合',category:'抽象概念'},{word:'直覺',category:'抽象概念'},
+    {word:'沉默',category:'抽象概念'},{word:'好奇心',category:'抽象概念'},{word:'歸屬感',category:'抽象概念'},
+
+    {word:'圖書館',category:'場所'},{word:'夜市',category:'場所'},{word:'車站',category:'場所'},
+    {word:'天文台',category:'場所'},{word:'廢棄工廠',category:'場所'},{word:'頂樓陽台',category:'場所'},
+    {word:'溫室',category:'場所'},{word:'地下道',category:'場所'},{word:'古董店',category:'場所'},
+
+    {word:'獨角獸',category:'奇幻'},{word:'龍',category:'奇幻'},{word:'精靈',category:'奇幻'},
+    {word:'時光機',category:'奇幻'},{word:'護身符',category:'奇幻'},{word:'魔法陣',category:'奇幻'},
+    {word:'分身術',category:'奇幻'},{word:'隱形斗篷',category:'奇幻'},{word:'許願井',category:'奇幻'}
+  ];
+
+  var lastDrawnWord = null;
+  function drawNoun(){
+    if(NOUN_BANK.length <= 1) return NOUN_BANK[0];
+    var idx;
+    do{ idx = Math.floor(Math.random() * NOUN_BANK.length); }while(NOUN_BANK[idx].word === lastDrawnWord);
+    lastDrawnWord = NOUN_BANK[idx].word;
+    return NOUN_BANK[idx];
+  }
+
+  /* ---------- 5 個評分構面 ---------- */
+  var DIMENSIONS = [
+    {id:'marketDemand',         label:'市場需求',   icon:'📈'},
+    {id:'profitability',        label:'收益性',     icon:'💰'},
+    {id:'competitiveAdvantage', label:'競爭優勢',   icon:'🛡️'},
+    {id:'scalability',          label:'可擴展性',   icon:'🚀'},
+    {id:'socialImpact',         label:'社會影響',   icon:'🌍'}
+  ];
+
+  var CATEGORY_BOOST = {
+    '動物':'socialImpact', '自然':'socialImpact',
+    '科技':'scalability', '場所':'scalability',
+    '職業':'profitability',
+    '日常物品':'marketDemand',
+    '抽象概念':'competitiveAdvantage', '奇幻':'competitiveAdvantage'
+  };
+
+  /* ---------- 規則式 fallback（免API金鑰，同輸入必同輸出） ---------- */
+  function hashString(s){
+    var h = 5381;
+    for(var i = 0; i < s.length; i++){ h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; }
+    return h >>> 0;
+  }
+  function fillTpl(tpl, kw1, kw2word){
+    return tpl.replace(/\{kw1\}/g, kw1).replace(/\{kw2\}/g, kw2word);
+  }
+
+  var NAME_TEMPLATES = [
+    '{kw2}{kw1}工作室','{kw1} × {kw2} 概念店','{kw2}式{kw1}訂閱盒','{kw1}的{kw2}實驗室',
+    '{kw2}控{kw1}社','{kw1}星球：{kw2}計畫','{kw2}聚落｜{kw1}基地','{kw1}與{kw2}研究所'
+  ];
+
+  var DESC_TEMPLATES = [
+    '以「{kw2}」的意象重新詮釋「{kw1}」，打造一個讓顧客一踏入就能感受到{kw2}式體驗的品牌。從產品設計、空間氛圍到服務流程，處處呼應{kw2}的特質，讓{kw1}不再只是原本的樣子，而是一段能被記住、被分享的體驗。',
+    '把「{kw2}」拆解成一組設計語彙，套用在「{kw1}」的每一個環節——從包裝、命名到互動方式，都藏著{kw2}的巧思。目標客群是那些對{kw1}已經有基本需求，但渴望被更有想像力的方式滿足的人。',
+    '這是一個訂閱制服務：每期以「{kw2}」為靈感策劃一份與「{kw1}」相關的驚喜內容，讓消費者用最低的嘗試成本，持續體驗{kw1}與{kw2}激盪出的新玩法，藉此培養長期黏著度與口碑擴散力。',
+    '鎖定願意為「差異化體驗」付費的族群，把{kw2}的元素融入{kw1}既有的產業鏈——不是取代原本的產品，而是加值一層敘事與情感連結，讓{kw1}多一個被討論、被推薦的理由。',
+    '以{kw2}為題打造一系列限定款{kw1}，透過小批量、高話題性的方式測試市場反應，驗證成功後再擴大成常態商品線，降低前期開發風險。',
+    '結合線上社群與線下體驗，讓喜歡{kw1}的人透過{kw2}主題活動彼此認識、交流心得，逐步累積成一個以{kw1}為核心、{kw2}為特色的忠實社群。',
+    '重新設計{kw1}的使用情境，把{kw2}當作核心賣點放進每一個消費者接觸點，讓原本平凡的{kw1}體驗，因為{kw2}的加入而變得值得拍照、分享與回購。',
+    '以「{kw2}」為靈感，開發一套讓{kw1}變得更有趣、更容易被年輕族群接受的全新呈現方式，鎖定重視新鮮感與話題性的消費者。'
+  ];
+
+  var STEP_STAGES = [
+    { label:'需求驗證', templates:[
+      '訪談 20-30 位對「{kw1}」有興趣的潛在顧客，測試他們對「{kw2}」這個切入點的接受度，找出最有共鳴的訴求。',
+      '在社群平台發布結合{kw1}與{kw2}的概念貼文，觀察互動與留言，初步驗證市場是否買單這個組合。',
+      '找 5-10 位目標客群做一對一深度訪談，釐清「{kw2}」到底解決了他們在「{kw1}」上的哪個痛點。'
+    ]},
+    { label:'原型/MVP', templates:[
+      '用最低成本做出一個{kw1}×{kw2}的最小可行版本（MVP），例如手作樣品或簡易網頁，先求有再求好。',
+      '找一小群早期使用者試用{kw1}結合{kw2}的原型，收集第一手回饋並快速修正。',
+      '用現有素材拼出一個能展示核心概念的{kw1}原型，把「{kw2}」的差異化元素放在最顯眼的位置測試反應。'
+    ]},
+    { label:'通路與定價', templates:[
+      '參考同類{kw1}商品的市場價格，依「{kw2}」帶來的獨特價值訂出合理溢價，並選定1-2個最容易觸及目標客群的通路上架。',
+      '評估線上（電商/社群）與線下（快閃店/市集）兩種通路何者更適合展示{kw2}這個特色，優先投入資源。',
+      '設計3種價格帶（入門/標準/進階）測試消費者對「{kw1}+{kw2}」組合的付費意願，找出最適定價。'
+    ]},
+    { label:'行銷獲客', templates:[
+      '以「{kw2}」作為核心故事，製作短影音或圖文內容，在社群上建立差異化的品牌印象，吸引第一批種子客戶。',
+      '找與{kw2}主題相關的KOL或社群合作曝光，讓{kw1}透過一個新奇的角度被更多人看見。',
+      '辦一場以「{kw2}」為主題的小型體驗活動，邀請潛在顧客親自感受{kw1}被重新詮釋後的樣貌，累積口碑與素材。'
+    ]},
+    { label:'擴張與永續', templates:[
+      '待核心客群穩定後，把「{kw1}×{kw2}」的成功模式複製到相鄰品類或城市，逐步擴大規模。',
+      '建立會員制度或訂閱機制，把靠{kw2}話題吸引來的一次性顧客，轉化為長期回購的忠實客群。',
+      '定期推出以{kw2}為靈感的限定系列，維持品牌新鮮感，避免{kw1}本業被市場視為一成不變。'
+    ]}
+  ];
+
+  var REASON_TEMPLATES = {
+    marketDemand: {
+      low: ['「{kw2}」目前對多數消費者來說仍偏小眾，需要額外教育市場才能讓「{kw1}」的潛在客群理解這個組合的價值。','「{kw1}」加上「{kw2}」的需求還沒有被驗證過，目前只能算是一個尚待市場測試的假設。'],
+      mid: ['「{kw1}」本身已有穩定的基本需求，加入「{kw2}」的元素能吸引一部分想嘗鮮的消費者，但主流市場仍需觀察。','部分對「{kw2}」有興趣的族群可能願意嘗試「{kw1}」的新玩法，但整體市場規模仍屬中等。'],
+      high: ['「{kw1}」是多數人日常就有的需求，「{kw2}」的話題性又容易引發討論與分享，兩者結合有機會創造明確的市場缺口。','「{kw2}」正好補足了「{kw1}」既有市場中「缺乏新鮮感」的痛點，需求端的接受度預期會相對明確。']
+    },
+    profitability: {
+      low: ['「{kw2}」的元素若需要客製化製作或高成本素材，恐怕會壓縮「{kw1}」原本的獲利空間，初期毛利可能偏低。','把「{kw2}」融入「{kw1}」的過程需要額外的開發與教育成本，短期內回收速度可能不快。'],
+      mid: ['「{kw1}」的成本結構原本就中規中矩，「{kw2}」帶來的加值感能支撐一定程度的溢價，但仍需靠規模攤平前期投入。','透過「{kw2}」創造差異化，「{kw1}」有機會爭取到比同業更高一點的客單價，但獲利仍取決於營運效率。'],
+      high: ['「{kw2}」是相對容易低成本操作的話題元素，加在「{kw1}」上能明顯提升議價空間與客單價，獲利潛力不錯。','「{kw1}」的既有毛利結構加上「{kw2}」的稀缺感，很適合走高溢價、小量高毛利的商業模式。']
+    },
+    competitiveAdvantage: {
+      low: ['「{kw2}」這個概念容易被同業快速模仿，若沒有建立起品牌故事或社群黏著度，很難維持長期的差異化優勢。','市場上可能已經有類似把「{kw2}」跟其他品類結合的先例，「{kw1}」的獨特性需要更明確的定位才能突圍。'],
+      mid: ['「{kw1}」搭配「{kw2}」的組合目前還不算常見，短期內有一定的話題優勢，但需要持續累積品牌識別度來鞏固。','這個組合具備一定的新鮮感，若能在早期建立起與「{kw2}」的強連結，較不容易被競品直接複製。'],
+      high: ['「{kw1}」與「{kw2}」的搭配相當罕見，這種跨界組合本身就是最直接的差異化優勢，短期內不容易被模仿。','把「{kw2}」的獨特性做成「{kw1}」品牌核心敘事的一部分，能建立起同業難以複製的品牌記憶點。']
+    },
+    scalability: {
+      low: ['「{kw2}」的呈現方式若高度仰賴手工或特定場地，「{kw1}」的規模化會受到明顯限制，較難快速複製到其他市場。','這個概念偏向體驗導向，「{kw1}」擴張時可能需要重新設計整套{kw2}元素，複製成本偏高。'],
+      mid: ['「{kw1}」本身有一定的標準化基礎，只要把「{kw2}」的核心概念抽象成可複製的模組，中期擴張是可行的。','若能把「{kw2}」的元素簡化成幾個關鍵符號，「{kw1}」的商業模式有機會逐步複製到新的通路或城市。'],
+      high: ['「{kw1}」加上「{kw2}」的組合天生就適合線上化或標準化複製，擴張時不需要大量重新設計，成長速度可以很快。','「{kw2}」的元素容易被系統化、模組化，讓「{kw1}」這門生意能以相對低的邊際成本快速展店或拓展通路。']
+    },
+    socialImpact: {
+      low: ['「{kw1}」結合「{kw2}」目前偏向商業導向的話題操作，對社會或環境層面的正向影響較不明顯。','這個組合的重點在於商業話題性，若沒有額外設計公益或永續機制，社會影響力相對有限。'],
+      mid: ['「{kw1}」與「{kw2}」的組合若能適度連結在地文化或社群參與，可以創造一定程度的正向社會連結。','若把部分收益回饋到與「{kw2}」相關的公益或永續行動，「{kw1}」這門生意能多一層社會價值。'],
+      high: ['「{kw2}」本身帶有自然／人文關懷的意象，若「{kw1}」能扣連在地文化保存或永續倡議，社會影響力會相對顯著。','這個組合有機會透過「{kw2}」喚起大眾對特定議題的關注，讓「{kw1}」不只是生意，也是一種社會溝通的媒介。']
+    }
+  };
+
+  function scoreDimension(kw1, kw2, dimId){
+    var h = hashString(kw1 + '::' + kw2.word + '::' + dimId);
+    var score = 1 + (h % 5);
+    if(CATEGORY_BOOST[kw2.category] === dimId) score += 1;
+    score = clamp(score, 1, 5);
+    var bucket = score <= 2 ? 'low' : (score === 3 ? 'mid' : 'high');
+    var pool = REASON_TEMPLATES[dimId][bucket];
+    var reasonTpl = pool[hashString(kw1 + '::' + kw2.word + '::' + dimId + '::r') % pool.length];
+    return { score: score, reason: fillTpl(reasonTpl, kw1, kw2.word), source:'rule' };
+  }
+
+  function generateRuleIdea(kw1, kw2){
+    var base = kw1 + '::' + kw2.word;
+    var nameTpl = NAME_TEMPLATES[hashString(base + '::name') % NAME_TEMPLATES.length];
+    var descTpl = DESC_TEMPLATES[hashString(base + '::desc') % DESC_TEMPLATES.length];
+    var ideaName = fillTpl(nameTpl, kw1, kw2.word);
+    var description = fillTpl(descTpl, kw1, kw2.word);
+    var steps = STEP_STAGES.map(function(stage, i){
+      var variants = stage.templates;
+      var tpl = variants[hashString(base + '::step' + i) % variants.length];
+      return fillTpl(tpl, kw1, kw2.word);
+    });
+    var dims = {};
+    DIMENSIONS.forEach(function(d){ dims[d.id] = scoreDimension(kw1, kw2, d.id); });
+    return { ideaName: ideaName, description: description, steps: steps, dims: dims };
+  }
+
+  /* ---------- BYOK：串接 Claude／OpenAI／Gemini／OpenRouter（金鑰只存本機瀏覽器） ---------- */
+  var AI_PROVIDERS = {
+    claude:     {label:'Claude（Anthropic）',       defaultModel:'claude-opus-4-8'},
+    openai:     {label:'OpenAI',                    defaultModel:'gpt-4o-mini'},
+    gemini:     {label:'Gemini（Google AI Studio）', defaultModel:'gemini-3.5-flash'},
+    openrouter: {label:'OpenRouter',                defaultModel:'openai/gpt-4o-mini'}
+  };
+  var API_STORAGE_KEY = 'bizIdeaApiConfig';
+
+  function loadApiConfig(){
+    try{ return JSON.parse(localStorage.getItem(API_STORAGE_KEY)) || {}; }catch(e){ return {}; }
+  }
+  function persistApiConfig(){
+    try{
+      localStorage.setItem(API_STORAGE_KEY, JSON.stringify({
+        provider: $('aiProvider').value,
+        model: $('aiModel').value.trim(),
+        apiKey: $('aiKey').value.trim()
+      }));
+    }catch(e){}
+  }
+  function initAiPanel(){
+    var sel = $('aiProvider');
+    sel.innerHTML = Object.keys(AI_PROVIDERS).map(function(k){
+      return '<option value="' + k + '">' + AI_PROVIDERS[k].label + '</option>';
+    }).join('');
+    var cfg = loadApiConfig();
+    sel.value = (cfg.provider && AI_PROVIDERS[cfg.provider]) ? cfg.provider : 'claude';
+    $('aiModel').value = cfg.model || AI_PROVIDERS[sel.value].defaultModel;
+    $('aiKey').value = cfg.apiKey || '';
+
+    sel.addEventListener('change', function(){
+      var modelEl = $('aiModel');
+      var isDefault = Object.keys(AI_PROVIDERS).some(function(k){ return AI_PROVIDERS[k].defaultModel === modelEl.value.trim(); });
+      if(!modelEl.value.trim() || isDefault) modelEl.value = AI_PROVIDERS[sel.value].defaultModel;
+      persistApiConfig();
+    });
+    $('aiModel').addEventListener('input', persistApiConfig);
+    $('aiKey').addEventListener('input', persistApiConfig);
+  }
+
+  async function callLLM(provider, model, apiKey, prompt, onRetry){
+    var url, headers, body, extract;
+    if(provider === 'claude'){
+      url = 'https://api.anthropic.com/v1/messages';
+      headers = {
+        'content-type': 'application/json', 'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true'
+      };
+      body = {model: model, max_tokens: 4000, messages: [{role: 'user', content: prompt}]};
+      extract = function(d){
+        if(d.stop_reason === 'refusal') throw new Error('模型拒絕了這個請求（refusal）');
+        var t = (d.content || []).filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('');
+        if(!t) throw new Error('回應中沒有文字內容');
+        return t;
+      };
+    } else if(provider === 'openai'){
+      url = 'https://api.openai.com/v1/chat/completions';
+      headers = {'content-type': 'application/json', 'authorization': 'Bearer ' + apiKey};
+      body = {model: model, messages: [{role: 'user', content: prompt}]};
+      extract = function(d){
+        var t = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+        if(!t) throw new Error('回應中沒有文字內容');
+        return t;
+      };
+    } else if(provider === 'gemini'){
+      url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
+      headers = {'content-type': 'application/json', 'x-goog-api-key': apiKey};
+      body = {contents: [{parts: [{text: prompt}]}]};
+      extract = function(d){
+        var parts = (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts) || [];
+        var t = parts.map(function(p){ return p.text || ''; }).join('');
+        if(!t) throw new Error('回應中沒有文字內容');
+        return t;
+      };
+    } else if(provider === 'openrouter'){
+      url = 'https://openrouter.ai/api/v1/chat/completions';
+      headers = {'content-type': 'application/json', 'authorization': 'Bearer ' + apiKey};
+      body = {model: model, messages: [{role: 'user', content: prompt}]};
+      extract = function(d){
+        var t = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+        if(!t) throw new Error('回應中沒有文字內容');
+        return t;
+      };
+    } else {
+      throw new Error('不支援的服務商');
+    }
+
+    var RETRYABLE = {429:1, 500:1, 503:1, 529:1};
+    var MAX_TRIES = 3;
+    for(var attempt = 1; attempt <= MAX_TRIES; attempt++){
+      var resp = await fetch(url, {method: 'POST', headers: headers, body: JSON.stringify(body), signal: AbortSignal.timeout(180000)});
+      var raw = await resp.text();
+      if(resp.ok) return extract(JSON.parse(raw));
+      var msg = raw.slice(0, 300);
+      try{
+        var err = JSON.parse(raw);
+        msg = (err.error && err.error.message) || err.message || msg;
+      }catch(e){}
+      if(RETRYABLE[resp.status] && attempt < MAX_TRIES){
+        var waitSec = attempt * 8;
+        if(onRetry) onRetry(attempt, resp.status, waitSec);
+        await new Promise(function(r){ setTimeout(r, waitSec * 1000); });
+        continue;
+      }
+      if(resp.status === 401 || resp.status === 403) msg += '——這通常表示 API 金鑰不正確、已失效，或貼的金鑰跟選的服務商不對應，請確認金鑰是否貼對';
+      if(resp.status === 404) msg += '——這通常表示模型名稱錯誤或已停用，請到該服務商的模型列表確認目前可用的模型 ID';
+      if(RETRYABLE[resp.status]) msg += '——已自動重試 ' + (MAX_TRIES - 1) + ' 次仍失敗，多為服務商暫時過載，請稍候幾分鐘再試，或更換模型／服務商';
+      throw new Error('API 回應 ' + resp.status + '：' + msg);
+    }
+  }
+
+  function buildIdeaPrompt(kw1, kw2){
+    var dimLines = DIMENSIONS.map(function(d){ return '- ' + d.id + '（' + d.label + '）'; }).join('\n');
+    var lines = [];
+    lines.push('你是一位善於跨界聯想的商業創意顧問。請把以下兩個關鍵字結合，設計一個新穎但務實可行的商業創意。');
+    lines.push('關鍵字1：' + kw1);
+    lines.push('關鍵字2：' + kw2.word + '（類別：' + kw2.category + '）');
+    lines.push('');
+    lines.push('請提供：一個吸睛的創意名稱、一段150-250字的描述、5個循序漸進的打造步驟（每步驟30-60字，涵蓋從驗證到擴張的完整流程）。');
+    lines.push('並針對以下5個構面各評 1-5 分整數，每項都要給一段具體評分理由（不要空泛套話，要點出跟這個創意直接相關的原因）：');
+    lines.push(dimLines);
+    lines.push('');
+    lines.push('請只輸出一個 JSON 物件，不要 markdown 圍欄、不要任何其他文字，格式固定為：');
+    lines.push('{"ideaName":"...","description":"...","steps":["...","...","...","...","..."],"dimensions":{"marketDemand":{"score":0,"reason":"..."},"profitability":{"score":0,"reason":"..."},"competitiveAdvantage":{"score":0,"reason":"..."},"scalability":{"score":0,"reason":"..."},"socialImpact":{"score":0,"reason":"..."}}}');
+    return lines.join('\n');
+  }
+
+  function extractJsonObject(text){
+    var cleaned = text.replace(/```json|```/g, '');
+    var start = cleaned.indexOf('{');
+    var end = cleaned.lastIndexOf('}');
+    if(start < 0 || end <= start) throw new Error('模型輸出中找不到 JSON 物件：' + text.slice(0, 120));
+    return JSON.parse(cleaned.slice(start, end + 1));
+  }
+
+  function clampScore(n){
+    n = Number(n);
+    if(!isFinite(n)) return null;
+    return clamp(Math.round(n), 1, 5);
+  }
+
+  function validateAiIdea(parsed, ruleResult){
+    var ideaName = typeof parsed.ideaName === 'string' ? parsed.ideaName.trim().slice(0, 60) : '';
+    var description = typeof parsed.description === 'string' ? parsed.description.trim().slice(0, 600) : '';
+    var steps = Array.isArray(parsed.steps)
+      ? parsed.steps.filter(function(s){ return typeof s === 'string' && s.trim(); }).slice(0, 8).map(function(s){ return s.trim().slice(0, 200); })
+      : [];
+
+    var missing = [];
+    if(!ideaName){ ideaName = ruleResult.ideaName; missing.push('創意名稱'); }
+    if(!description){ description = ruleResult.description; missing.push('創意描述'); }
+    if(steps.length < 3){ steps = ruleResult.steps; missing.push('打造步驟'); }
+
+    var dims = {};
+    DIMENSIONS.forEach(function(d){
+      var src = parsed.dimensions && parsed.dimensions[d.id];
+      var score = src ? clampScore(src.score) : null;
+      var reason = src && typeof src.reason === 'string' ? src.reason.trim().slice(0, 300) : '';
+      if(score !== null && reason){
+        dims[d.id] = { score: score, reason: reason, source: 'ai' };
+      } else {
+        dims[d.id] = Object.assign({}, ruleResult.dims[d.id], { source: 'rule' });
+        missing.push(d.label);
+      }
+    });
+
+    return { ideaName: ideaName, description: description, steps: steps, dims: dims, missing: missing, textSource: missing.length ? 'mixed' : 'ai' };
+  }
+
+  function computeOverall(dims){
+    var total = 0;
+    DIMENSIONS.forEach(function(d){ total += (dims[d.id].score || 0); });
+    return Math.round((total / DIMENSIONS.length) * 10) / 10;
+  }
+  function gradeOf(avg){
+    if(avg >= 4.2) return 'a';
+    if(avg >= 3.2) return 'b';
+    if(avg >= 2.2) return 'c';
+    return 'd';
+  }
+  var GRADE_COLOR = { a:'var(--accent)', b:'var(--cyan)', c:'var(--amber)', d:'var(--red)' };
+  var GRADE_LABEL = { a:'優異', b:'良好', c:'普通', d:'待加強' };
+  var GAUGE_CIRC = 2 * Math.PI * 52;
+
+  /* ---------- 狀態與持久化 ---------- */
+  var DRAFT_KEY = 'bizIdeaDraft';
+  var RESULT_KEY = 'bizIdeaResult';
+  var state = { kw1:'', kw2:null, result:null };
+
+  function loadDraft(){ try{ return JSON.parse(localStorage.getItem(DRAFT_KEY)) || {}; }catch(e){ return {}; } }
+  function persistDraft(){ try{ localStorage.setItem(DRAFT_KEY, JSON.stringify({ kw1: state.kw1, kw2: state.kw2 })); }catch(e){} }
+  function loadResult(){ try{ return JSON.parse(localStorage.getItem(RESULT_KEY)) || null; }catch(e){ return null; } }
+  function persistResult(){ try{ localStorage.setItem(RESULT_KEY, JSON.stringify(state.result)); }catch(e){} }
+
+  /* ---------- 渲染 ---------- */
+  function renderKw2(){
+    var el = $('kw2Badge');
+    if(!state.kw2){ el.textContent = '尚未抽出'; return; }
+    el.innerHTML = '<strong>' + escapeHtml(state.kw2.word) + '</strong><span class="kw2-cat">' + escapeHtml(state.kw2.category) + '</span>';
+  }
+
+  function redraw(){
+    state.kw2 = drawNoun();
+    persistDraft();
+    renderKw2();
+  }
+
+  var EXAMPLES = ['咖啡', '寵物', '露營', '手作甜點', '二手書'];
+  function renderExamples(){
+    $('kw1Examples').innerHTML = EXAMPLES.map(function(w){
+      return '<button type="button" class="example-btn" data-kw1="' + escapeHtml(w) + '">' + escapeHtml(w) + '</button>';
+    }).join('');
+  }
+
+  function renderResult(){
+    var r = state.result;
+    var panel = $('resultPanel');
+    if(!r){ panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+
+    $('sourceBadge').style.display = (r.textSource === 'rule') ? 'inline-flex' : 'none';
+
+    var missingNote = $('missingNote');
+    if(r.textSource === 'mixed' && r.missing && r.missing.length){
+      missingNote.textContent = 'AI 未提供有效內容，以下項目已自動改用示範版本：' + r.missing.join('、');
+      missingNote.style.display = 'block';
+    } else {
+      missingNote.style.display = 'none';
+    }
+
+    $('ideaName').textContent = r.ideaName;
+    $('ideaDesc').textContent = r.description;
+    $('ideaSteps').innerHTML = r.steps.map(function(s){ return '<li>' + escapeHtml(s) + '</li>'; }).join('');
+
+    var dimGrid = $('dimGrid');
+    dimGrid.innerHTML = DIMENSIONS.map(function(d){
+      var v = r.dims[d.id];
+      var g = gradeOf(v.score);
+      return '<div class="dim-card" data-source="' + (v.source || 'rule') + '">'
+        + '<div class="dim-head"><div class="dim-title"><span class="dim-icon">' + d.icon + '</span>' + d.label + '</div>'
+        + '<span class="dim-score" style="color:' + GRADE_COLOR[g] + '">' + v.score + ' / 5</span></div>'
+        + '<div class="dim-bar-track"><div class="dim-bar-fill" style="width:' + (v.score / 5 * 100) + '%;background:' + GRADE_COLOR[g] + '"></div></div>'
+        + '<p class="dim-reason">' + escapeHtml(v.reason) + '</p>'
+        + '</div>';
+    }).join('');
+
+    var overall = computeOverall(r.dims);
+    var grade = gradeOf(overall);
+    $('gaugeScore').textContent = overall.toFixed(1);
+    $('gaugeScore').style.color = GRADE_COLOR[grade];
+    var gradeEl = $('gaugeGrade');
+    gradeEl.textContent = GRADE_LABEL[grade];
+    gradeEl.className = 'gauge-grade grade-' + grade;
+    var offset = GAUGE_CIRC * (1 - overall / 5);
+    $('gaugeFill').style.strokeDashoffset = offset.toFixed(2);
+    $('gaugeFill').style.stroke = GRADE_COLOR[grade];
+
+    $('regenerateBtn').style.display = 'inline-block';
+    panel.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  /* ---------- 產生流程 ---------- */
+  function doGenerate(){
+    var kw1raw = $('kw1Input').value.trim();
+    if(!kw1raw){ showToast('請先輸入關鍵字1'); $('kw1Input').focus(); return; }
+    state.kw1 = kw1raw;
+    if(!state.kw2) state.kw2 = drawNoun();
+    persistDraft();
+
+    var ruleResult = generateRuleIdea(state.kw1, state.kw2);
+    var provider = $('aiProvider').value;
+    var model = $('aiModel').value.trim();
+    var apiKey = $('aiKey').value.trim();
+    var report = $('genReport');
+    var btn = $('generateBtn');
+
+    if(!apiKey){
+      state.result = { ideaName: ruleResult.ideaName, description: ruleResult.description, steps: ruleResult.steps, dims: ruleResult.dims, missing: [], textSource: 'rule' };
+      persistResult();
+      renderResult();
+      report.innerHTML = '';
+      return;
+    }
+    if(!model){ report.innerHTML = '<div class="bad">請填入模型名稱</div>'; return; }
+    if(!isLatin1(apiKey)){ report.innerHTML = '<div class="bad">API 金鑰包含不可用的字元（可能複製時夾帶了多餘的符號或中文字），請重新確認貼上內容只有金鑰本身</div>'; return; }
+    if(!isLatin1(model)){ report.innerHTML = '<div class="bad">模型名稱包含不可用的字元，請確認只填入英數字模型 ID</div>'; return; }
+
+    persistApiConfig();
+    btn.disabled = true;
+    report.innerHTML = '<div class="ok">呼叫 ' + AI_PROVIDERS[provider].label + '（' + escapeHtml(model) + '）中，請稍候…</div>';
+
+    callLLM(provider, model, apiKey, buildIdeaPrompt(state.kw1, state.kw2), function(attempt, status, waitSec){
+      report.innerHTML = '<div class="warn">API 回應 ' + status + '（服務商暫時過載／限流），' + waitSec + ' 秒後自動重試（第 ' + attempt + '／2 次）…</div>';
+    }).then(function(text){
+      var parsed;
+      try{ parsed = extractJsonObject(text); }catch(e){ throw new Error('AI 回應無法解析為 JSON：' + e.message); }
+      state.result = validateAiIdea(parsed, ruleResult);
+      persistResult();
+      renderResult();
+      report.innerHTML = '<div class="ok">已產生 AI 商業創意，請自行檢查後再使用。</div>';
+    }).catch(function(err){
+      var msg;
+      if(err.name === 'TimeoutError') msg = '請求逾時（180秒），已改用示範版本，可重試或換模型';
+      else if(/ISO-8859-1|non.*code point/i.test(err.message || '')) msg = 'API 金鑰或模型名稱包含不可用的字元，請重新確認貼上內容只有金鑰／模型 ID 本身——已改用示範版本';
+      else msg = (err.message || String(err)) + '——已自動改用示範版本，可重試或檢查金鑰/模型設定';
+      state.result = { ideaName: ruleResult.ideaName, description: ruleResult.description, steps: ruleResult.steps, dims: ruleResult.dims, missing: [], textSource: 'rule' };
+      persistResult();
+      renderResult();
+      report.innerHTML = '<div class="bad">' + escapeHtml(msg) + '</div>';
+    }).finally(function(){
+      btn.disabled = false;
+    });
+  }
+
+  /* ---------- 事件綁定 ---------- */
+  $('kw1Examples').addEventListener('click', function(e){
+    var btn = e.target.closest('.example-btn');
+    if(!btn) return;
+    $('kw1Input').value = btn.dataset.kw1;
+    state.kw1 = btn.dataset.kw1;
+    redraw();
+  });
+  $('kw1Input').addEventListener('input', function(){
+    state.kw1 = this.value;
+    persistDraft();
+  });
+  $('redrawBtn').addEventListener('click', redraw);
+  $('generateBtn').addEventListener('click', doGenerate);
+  $('regenerateBtn').addEventListener('click', doGenerate);
+
+  /* ---------- 初始化 ---------- */
+  renderExamples();
+  initAiPanel();
+  $('gaugeFill').style.strokeDasharray = GAUGE_CIRC.toFixed(2);
+  $('gaugeFill').style.strokeDashoffset = GAUGE_CIRC.toFixed(2);
+
+  var draft = loadDraft();
+  state.kw1 = draft.kw1 || '';
+  $('kw1Input').value = state.kw1;
+  if(draft.kw2 && draft.kw2.word){
+    state.kw2 = draft.kw2;
+    lastDrawnWord = draft.kw2.word;
+  } else {
+    state.kw2 = drawNoun();
+  }
+  renderKw2();
+  persistDraft();
+
+  var savedResult = loadResult();
+  if(savedResult){ state.result = savedResult; renderResult(); }
+})();
+</script>
+
+</body>
+</html>
