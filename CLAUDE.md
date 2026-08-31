@@ -31,10 +31,28 @@
 
 無伺服器端經手使用者資料（序號授權後端除外，只傳送序號本身）；關鍵字、抽出的名詞、產生結果、AI 設定皆只存在使用者瀏覽器的 localStorage。首頁與手冊皆明列使用警語：生成內容僅供發想參考不構成商業決策建議、AI內容需自行查核、請勿輸入真實個資或機密資料、僅供教學與個人使用禁止商業化。修改功能時這些警語需一併檢視是否仍準確。
 
+## GitHub 與線上部署
+
+已推公開 GitHub repo：<https://github.com/M255525/business-idea-generator>，已用 `.github/workflows/deploy-pages.yml`（Actions 部署模式，`gh api repos/M255525/business-idea-generator/pages -f build_type=workflow` 啟用，比照 `workspace-git-repos` 記載的「不要用 legacy branch-source」慣例）啟用 GitHub Pages：<https://m255525.github.io/business-idea-generator/>（2026-08-31 上線，已用 curl 與瀏覽器對正式網址驗證頁面與序號授權皆正常運作）。
+
+## 加入主畫面（PWA，2026-08-31 新增）
+
+比照 `ai-prompt-generator`／`coffee-ig-planner` 的做法：`manifest.json`＋`icons/`（翠綠 `#34d399` 底＋白色「創」字，PIL＋`msjhbd.ttc` 產生，192/512/maskable-512/apple-touch-icon 四種尺寸，產生腳本未進 repo，比照工作區慣例）＋`service-worker.js`（network-first＋同源快取備援，`fetch(request,{cache:'reload'})` 這個細節必須保留，否則 GitHub Pages 的 HTTP 快取會讓 network-first 失效）。頁尾 `.footer-meta` 新增「📲 加入主畫面」按鈕（`#installBtn`）＋獨立 IIFE（含 iOS/macOS Safari 判斷、自帶 `notify()` 不依賴外部 `showToast()`，逐字沿用 `ai-prompt-generator` 已修過 bug 的版本，避免重蹈「按鈕沒反應」的舊坑）。`<head>` 同步補上 `manifest` link／`apple-touch-icon`／`mobile-web-app-capable`／`apple-mobile-web-app-*` 系列 meta。已用瀏覽器實測：Service Worker 成功註冊（`getRegistrations()` 回傳1筆），且 Chrome 判定頁面符合安裝條件並觸發真實 `beforeinstallprompt`（測試時用合成 click 觸發 `.prompt()` 因缺少真實使用者手勢而拋出 `NotAllowedError`，這是測試方法本身的限制不是功能缺陷——真人點擊時會正常運作，比照 `coffee-ig-planner` 已記錄過的同一種測試限制）。
+
+## 訪客次數計數器（2026-08-31 新增）
+
+頁尾 `.footer-meta` 加了 `visitor-badge.laobi.icu` 的 SVG badge（`<img>` 直接嵌入，`page_id=m255525.business-idea-generator`，免金鑰免後端），做法比照 `SocialPost`／`ai-prompt-generator` 已驗證過的模式，已用瀏覽器實測圖片成功載入。
+
+## 匯出 TXT／PDF（2026-08-31 新增）
+
+- **TXT**：`buildTextReport(kw1, kw2, result)` 組出純文字報告（創意名稱/描述/步驟/五構面評分理由/總平均分），`downloadText()`＋`sanitizeFilename()` 用 Blob + 隱藏 `<a download>` 觸發下載，逐字比照 `coffee-ig-planner` 的做法搬過來。已用 Playwright `waitForEvent('download')` 攔截驗證檔名（`關鍵字1×關鍵字2-商業創意.txt`）與內容皆正確、UTF-8 編碼無亂碼。
+- **PDF**：比照 `restaurant-feasibility-calculator` 的「獨立靜態報表」路線（**非**使用 jsPDF/html2pdf 等函式庫，純瀏覽器原生 `window.print()`）——`#printReportRoot`（畫面上永遠 `display:none`）平常不可見，按下「🖨️ 匯出 PDF」時 `buildPrintReport()` 把結果組成一段 HTML（所有動態文字皆過 `escapeHtml()`）塞進去，再呼叫 `window.print()`；`@media print{ body>*{display:none!important} #printReportRoot{display:block!important} }` 全域隱藏法，比逐一排查隱藏 UI 元件可靠、不會有分頁空白頁問題（`restaurant-feasibility-calculator` CLAUDE.md 記載過的已知坑：改用 `display:none` 而非 `visibility:hidden` 才能避免）。已用 Playwright `page.emulateMedia({media:'print'})` + 截圖驗證：列印版面正確顯示白底黑字報告（含表格化的五構面評分），其餘 UI／深色主題／跑馬燈皆正確隱藏；`body{background:#fff!important;padding:0!important}` 這行是必要的——不加的話 `body` 本身（非其子元素）仍會保留深色格線背景與 `padding-top:30px`，在列印版面頂端留下一段跟報告內容不搭的深色空白。
+
+**PDF 浮水印（2026-08-31 應使用者要求追加）**：`#pdfWatermark`（`<img id="wmImg">`）逐字比照 `restaurant-feasibility-calculator` 的做法——內嵌 base64 data URI（不是 CSS `background-image`，因為會被瀏覽器「列印背景圖形」選項預設擋掉，`<img>` 是內容一定會印出來）、`position:fixed;opacity:.11` 讓每頁都重複出現。**圖檔直接沿用工作區既有的已處理版本**：`資料儀表板/IPA_Kano/watermark-source.png`（480×297、已去背 RGBA，「馬克老師 AI・工具・學習・成長」品牌圖示，跟 `IPA_Kano`／`restaurant-feasibility-calculator` 用的是同一張），複製到本專案根目錄 `watermark-source.png` 後用 Python 腳本 base64 編碼、字串替換塞進 `index.html` 的 `WATERMARK_DATA_URI` 常數（約151KB，未經過對話視窗，避免灌爆 token）。**TXT 匯出**因為是純文字無法放圖片，改在報告末尾加一行文字署名「馬克老師｜AI・工具・學習・成長」作為對應的文字版本。已用 Playwright 截圖確認 PDF 浮水印正確置中淡出顯示、不影響內容可讀性；TXT 下載內容確認含署名行。
+
 ## 本次未做（後續視需要再處理）
 
 - 未打包可攜式桌面版 exe（需求未明確提及）。
-- 未推公開 GitHub repo / 未啟用 GitHub Pages（先本機開發完成、序號授權流程驗證過後再問使用者是否要公開部署）。
 - 未加 PWA（加入主畫面）與訪客次數計數器——本次需求只明確要求跑馬燈／創作者資訊／使用警語／RWD，未列入這兩項；若之後要加，比照 `coffee-ig-planner`／`ai-prompt-generator` 的既有做法即可。
 - 根目錄 `專案目錄.docx` 尚未加入本專案的列。
 
