@@ -8,6 +8,14 @@
 
 單一 `index.html`：內嵌 CSS/JS、無外部資源、無建置步驟。視覺主題是深色「創意萌芽」翠綠風格（`--bg #0a140f` + 淡格線背景 + 翠綠色 `--accent #34d399`），與 ai-prompt-generator(青)/ai-image-prompt-studio(洋紅)/Prompt(琥珀)/ai-music-prompt-studio(紫)/social-post-grader(teal) 區隔。
 
+**底色主題選擇器（2026-09-10 新增）**：topbar 右上角「底色」四個圓形色票（`#themePicker`），依使用者要求必含一個淺色主題。全部靠重新定義既有 CSS variables 實現，不新增另一套樣式表：
+- `green`（預設，深翠綠，原始配色）／`violet`（深紫夜）／`slate`（深藍）／`light`（**淺色**，白底＋深綠文字）。
+- 選擇存在 `localStorage['bizIdeaTheme']`；`<head>` 最前面有一段極早期 inline script 在畫面繪製前就讀出並設定 `<html data-theme="...">`，避免換頁時先閃一下預設深色再跳成使用者選的主題（flash of wrong theme）。
+- **`--accent`／`--violet` 分成「文字/邊框用」與「純色按鈕底用」兩個變數**（新增 `--accent-fill`／`--violet-fill`）：因為同一顏色不能同時滿足「淺色主題下當文字要夠深才能在白底上看清楚」與「當 `.btn.primary`／`.btn.violet` 純色按鈕底、要夠亮才能配上寫死的深色文字（`#04120c`／`#1b1330`）」這兩個互斥的對比度需求——`light` 主題把 `--accent` 調暗（`#0e9d63`，給文字/邊框用）但 `--accent-fill` 仍保留原本鮮綠 `#34d399`（給按鈕底用），`--violet`／`--violet-fill` 同理。深色主題（`green`/`violet`/`slate`）這兩個變數維持相同值，行為不變。
+- 按鈕 hover 效果從寫死的淺色 hex 改成 `filter:brightness(1.1)`，這樣任何主題的 hover 都會自動變亮而不用逐主題再寫一次 hover 色。
+- `--grid-line`（body 背景格線的顏色）、`--cyan`/`--amber`/`--red`（評分等第顏色）也各主題各自覆寫，確保在白底上仍有足夠對比（例如 `light` 主題的 `--amber` 用較深的 `#a35b09` 取代原本較亮的 `#fbbf24`）。
+- 已用瀏覽器實測四個主題皆正確切換（含已產生結果的評分卡片/量表/進度條），且 reload 後主題正確保留、無閃爍。
+
 - **`NOUN_BANK`**：關鍵字2的候選名詞庫，扁平陣列，每筆 `{word, category}`，8大類（動物／科技／自然／職業／日常物品／抽象概念／場所／奇幻）各9-10個，共76個，涵蓋「具體↔抽象」光譜以產生有趣的組合張力。`drawNoun()` 用 `Math.random()` 抽取，排除與 `lastDrawnWord` 相同者確保「重新抽一個」必定變化。
 - **規則式 fallback（免API金鑰，deterministic）**：`hashString()`（djb2變體字串hash）取代 `Math.random()`，同一組 kw1+kw2 永遠產出相同結果——`generateRuleIdea()` 對創意名稱（`NAME_TEMPLATES`，8種）、描述（`DESC_TEMPLATES`，8種）、5個階段步驟（`STEP_STAGES`：需求驗證→原型/MVP→通路定價→行銷獲客→擴張永續，各3種變體）各用不同 salt 算 hash 選模板；`scoreDimension()` 用 `score = 1 + (hash % 5)`，命中 `CATEGORY_BOOST[category]===dimId` 再加1分並 clamp 1-5，理由文字依分數區間（low1-2/mid3/high4-5，`REASON_TEMPLATES`）挑選。**新增/調整名詞庫或模板池時只需改對應陣列，不需要動抽取或評分邏輯。**
 - **AI生成（選用，BYOK）**：`AI_PROVIDERS`／`callLLM()` 與 `ai-prompt-generator/index.html` 同一套實作（Claude 需 `anthropic-dangerous-direct-browser-access` header；OpenAI/OpenRouter 用 Bearer；Gemini 用 `x-goog-api-key`；429/500/503/529 重試3次；180秒逾時）。`buildIdeaPrompt()` 要求LLM只輸出JSON（**故意不讓AI回傳總分**，從源頭避免總分不一致）；`validateAiIdea()` 對 `ideaName`/`description`/`steps`/5個`dimensions`各自獨立驗證（`clampScore()`限制1-5整數、`reason`非空字串），缺哪項就補該項的規則式結果（`missing[]`），不整批放棄，比照 `social-post-grader` 的 `validateAiEvaluation()` 精神。

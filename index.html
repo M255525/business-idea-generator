@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+(function () {
+  'use strict';
+  try {
+    var t = localStorage.getItem('bizIdeaTheme');
+    if (t && t !== 'green') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
 <title>商業創意產生器 · 關鍵字組合生成商業點子＋五構面評分</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#34d399">
@@ -23,25 +32,54 @@
     --text-dim:#a8c9b6;
     --text-faint:#6f9280;
     --accent:#34d399;
+    --accent-fill:#34d399;
     --accent-soft:rgba(52,211,153,0.14);
     --accent-glow:rgba(52,211,153,0.5);
     --violet:#a78bfa;
+    --violet-fill:#a78bfa;
     --violet-soft:rgba(167,139,250,0.14);
     --cyan:#38bdf8;
     --amber:#fbbf24;
     --red:#f87171;
+    --grid-line:rgba(52,211,153,0.035);
     --font-mono:ui-monospace,"Cascadia Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
     --font-sans:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;
     --radius:10px;
+  }
+  /* ---------- 底色主題（其中 light 為淺色） ---------- */
+  :root[data-theme="violet"]{
+    --bg:#140f1f;--bg-alt:#1a1329;--panel:#211735;--panel-raised:#2c1f47;
+    --line:#3d2c5c;--line-soft:#2e2248;
+    --text:#f2edfb;--text-dim:#c6b8ee;--text-faint:#8a76c2;
+    --accent:#a78bfa;--accent-fill:#a78bfa;--accent-soft:rgba(167,139,250,0.16);--accent-glow:rgba(167,139,250,0.5);
+    --violet:#38bdf8;--violet-fill:#38bdf8;--violet-soft:rgba(56,189,248,0.14);
+    --grid-line:rgba(167,139,250,0.045);
+  }
+  :root[data-theme="slate"]{
+    --bg:#0a121c;--bg-alt:#0f1a26;--panel:#132330;--panel-raised:#1b3040;
+    --line:#264256;--line-soft:#1d3242;
+    --text:#e8f1f7;--text-dim:#a7c2d3;--text-faint:#6d8ea3;
+    --accent:#38bdf8;--accent-fill:#38bdf8;--accent-soft:rgba(56,189,248,0.14);--accent-glow:rgba(56,189,248,0.5);
+    --grid-line:rgba(56,189,248,0.045);
+  }
+  :root[data-theme="light"]{
+    --bg:#f5f8f6;--bg-alt:#eef4f0;--panel:#ffffff;--panel-raised:#eef6f1;
+    --line:#d7e3da;--line-soft:#e2ece5;
+    --text:#16261c;--text-dim:#4a6255;--text-faint:#7c9686;
+    --accent:#0e9d63;--accent-fill:#34d399;--accent-soft:rgba(14,157,99,0.12);--accent-glow:rgba(14,157,99,0.35);
+    --violet:#6d3fd1;--violet-fill:#a78bfa;--violet-soft:rgba(109,63,209,0.12);
+    --cyan:#0284c7;--amber:#a35b09;--red:#dc2626;
+    --grid-line:rgba(14,157,99,0.05);
   }
   *{box-sizing:border-box;}
   html{-webkit-text-size-adjust:100%;}
   body{
     margin:0;background:var(--bg);color:var(--text);font-family:var(--font-sans);line-height:1.65;min-height:100vh;
     background-image:
-      linear-gradient(rgba(52,211,153,0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(52,211,153,0.035) 1px, transparent 1px);
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
     background-size:34px 34px;
+    transition:background-color .2s ease, color .2s ease;
   }
   a{color:var(--accent);}
   ::selection{background:var(--accent);color:#04120c;}
@@ -53,10 +91,10 @@
     padding:9px 16px;border-radius:6px;cursor:pointer;transition:.15s;
   }
   .btn:hover{border-color:var(--accent);color:var(--accent);}
-  .btn.primary{background:var(--accent);color:#04120c;border-color:var(--accent);font-weight:700;}
-  .btn.primary:hover{background:#5fe0af;color:#04120c;box-shadow:0 0 16px var(--accent-glow);}
-  .btn.violet{background:var(--violet);color:#1b1330;border-color:var(--violet);font-weight:700;}
-  .btn.violet:hover{background:#bda6fc;box-shadow:0 0 16px rgba(167,139,250,.5);}
+  .btn.primary{background:var(--accent-fill);color:#04120c;border-color:var(--accent-fill);font-weight:700;}
+  .btn.primary:hover{filter:brightness(1.1);box-shadow:0 0 16px var(--accent-glow);}
+  .btn.violet{background:var(--violet-fill);color:#1b1330;border-color:var(--violet-fill);font-weight:700;}
+  .btn.violet:hover{filter:brightness(1.1);box-shadow:0 0 16px var(--violet-soft);}
   .btn.ghost{background:transparent;}
   .btn:disabled{opacity:.45;cursor:not-allowed;}
   .btn:disabled:hover{border-color:var(--line);color:var(--text);box-shadow:none;}
@@ -94,7 +132,7 @@
 
   /* ---------- top bar ---------- */
   .topbar{
-    display:flex;align-items:center;justify-content:space-between;padding:16px 24px;
+    display:flex;align-items:center;justify-content:space-between;padding:16px 24px;gap:10px;flex-wrap:wrap;
     border-bottom:1px solid var(--line-soft);background:linear-gradient(180deg, var(--bg-alt), var(--bg));
     position:sticky;top:0;z-index:20;backdrop-filter:blur(6px);
   }
@@ -103,6 +141,20 @@
   .brand strong{font-size:15px;font-weight:700;}
   .topbar nav a{font-family:var(--font-mono);font-size:13px;color:var(--text-dim);text-decoration:none;border:1px solid var(--line);padding:7px 14px;border-radius:6px;transition:.15s;}
   .topbar nav a:hover{color:var(--accent);border-color:var(--accent);}
+
+  /* ---------- 底色主題選擇器 ---------- */
+  .theme-picker{display:flex;align-items:center;gap:6px;}
+  .theme-picker .theme-label{font-family:var(--font-mono);font-size:11px;color:var(--text-faint);margin-right:2px;}
+  .theme-swatch{
+    width:22px;height:22px;border-radius:50%;cursor:pointer;padding:0;
+    border:2px solid var(--line);box-shadow:inset 0 0 0 2px var(--bg-alt);transition:.15s;
+  }
+  .theme-swatch:hover{transform:scale(1.12);}
+  .theme-swatch[aria-pressed="true"]{border-color:var(--text);box-shadow:inset 0 0 0 2px var(--bg-alt), 0 0 0 2px var(--accent);}
+  .theme-swatch[data-theme-id="green"]{background:linear-gradient(135deg,#0a140f,#34d399);}
+  .theme-swatch[data-theme-id="violet"]{background:linear-gradient(135deg,#140f1f,#a78bfa);}
+  .theme-swatch[data-theme-id="slate"]{background:linear-gradient(135deg,#0a121c,#38bdf8);}
+  .theme-swatch[data-theme-id="light"]{background:linear-gradient(135deg,#ffffff,#0e9d63);}
 
   /* ---------- hero ---------- */
   .hero{padding:48px 24px 30px;text-align:center;border-bottom:1px solid var(--line-soft);background:linear-gradient(180deg, var(--bg-alt), var(--bg));}
@@ -153,7 +205,7 @@
   .api-note{font-size:11.5px;color:var(--text-faint);margin-top:8px;line-height:1.6;}
   .gen-report{margin-top:10px;font-size:12.5px;}
   .gen-report .ok{color:var(--accent);}
-  .gen-report .warn{color:#facc15;}
+  .gen-report .warn{color:var(--amber);}
   .gen-report .bad{color:var(--red);}
 
   .cta-row{display:flex;gap:10px;flex-wrap:wrap;}
@@ -260,6 +312,8 @@
   @media (max-width:600px){
     .api-grid{grid-template-columns:1fr;}
     .cta-row .btn{flex:1 1 auto;text-align:center;}
+    .theme-picker .theme-label{display:none;}
+    .theme-swatch{width:20px;height:20px;}
   }
 </style>
 </head>
@@ -282,7 +336,14 @@
 
 <div class="topbar">
   <div class="brand"><span class="dot"></span><strong>商業創意產生器</strong></div>
-  <div style="display:flex;align-items:center;gap:10px;">
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <div class="theme-picker" id="themePicker" role="group" aria-label="切換底色主題">
+      <span class="theme-label">底色</span>
+      <button type="button" class="theme-swatch" data-theme-id="green" title="翠綠（深色，預設）" aria-label="翠綠（深色，預設）" aria-pressed="false"></button>
+      <button type="button" class="theme-swatch" data-theme-id="violet" title="紫夜（深色）" aria-label="紫夜（深色）" aria-pressed="false"></button>
+      <button type="button" class="theme-swatch" data-theme-id="slate" title="深藍（深色）" aria-label="深藍（深色）" aria-pressed="false"></button>
+      <button type="button" class="theme-swatch" data-theme-id="light" title="白日（淺色）" aria-label="白日（淺色）" aria-pressed="false"></button>
+    </div>
     <span id="licenseBadge" class="license-badge" style="display:none;"></span>
     <nav><a href="manual.html">操作手冊</a></nav>
   </div>
@@ -486,6 +547,41 @@
   render(loadCache());
   fetchMarquee();
   setInterval(fetchMarquee, REFRESH_MS);
+})();
+
+/* ================= 底色主題選擇器（獨立運作，跟下方主程式邏輯無關） ================= */
+(function () {
+  'use strict';
+  var STORAGE_KEY = 'bizIdeaTheme';
+  var THEME_COLORS = { green: '#0a140f', violet: '#140f1f', slate: '#0a121c', light: '#f5f8f6' };
+  var picker = document.getElementById('themePicker');
+  if (!picker) return;
+  var buttons = picker.querySelectorAll('.theme-swatch');
+  var metaThemeColor = document.querySelector('meta[name="theme-color"]');
+
+  function currentTheme() {
+    try { return localStorage.getItem(STORAGE_KEY) || 'green'; } catch (e) { return 'green'; }
+  }
+  function applyTheme(id) {
+    if (id === 'green') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', id);
+    }
+    if (metaThemeColor) metaThemeColor.setAttribute('content', THEME_COLORS[id] || THEME_COLORS.green);
+    buttons.forEach(function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-theme-id') === id ? 'true' : 'false');
+    });
+  }
+  function setTheme(id) {
+    try { localStorage.setItem(STORAGE_KEY, id); } catch (e) {}
+    applyTheme(id);
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () { setTheme(b.getAttribute('data-theme-id')); });
+  });
+  applyTheme(currentTheme());
 })();
 
 /* ================= PWA 加入主畫面（獨立運作，跟下方主程式邏輯無關） ================= */
