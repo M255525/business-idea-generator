@@ -1029,7 +1029,7 @@
     } else if(provider === 'openai'){
       url = 'https://api.openai.com/v1/chat/completions';
       headers = {'content-type': 'application/json', 'authorization': 'Bearer ' + apiKey};
-      body = {model: model, messages: [{role: 'user', content: prompt}]};
+      body = {model: model, messages: [{role: 'user', content: prompt}], response_format: {type: 'json_object'}};
       extract = function(d){
         var t = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
         if(!t) throw new Error('回應中沒有文字內容');
@@ -1038,7 +1038,7 @@
     } else if(provider === 'gemini'){
       url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
       headers = {'content-type': 'application/json', 'x-goog-api-key': apiKey};
-      body = {contents: [{parts: [{text: prompt}]}]};
+      body = {contents: [{parts: [{text: prompt}]}], generationConfig: {responseMimeType: 'application/json'}};
       extract = function(d){
         var parts = (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts) || [];
         var t = parts.map(function(p){ return p.text || ''; }).join('');
@@ -1093,9 +1093,38 @@
     lines.push('並針對以下5個構面各評 1-5 分整數，每項都要給一段具體評分理由（不要空泛套話，要點出跟這個創意直接相關的原因）：');
     lines.push(dimLines);
     lines.push('');
-    lines.push('請只輸出一個 JSON 物件，不要 markdown 圍欄、不要任何其他文字，格式固定為：');
+    lines.push('請只輸出一個 JSON 物件，不要 markdown 圍欄、不要任何其他文字。文字內容中若要引用詞語請用「」，不要使用英文雙引號 "，也不要在字串中換行。格式固定為：');
     lines.push('{"ideaName":"...","description":"...","steps":["...","...","...","...","..."],"dimensions":{"marketDemand":{"score":0,"reason":"..."},"profitability":{"score":0,"reason":"..."},"competitiveAdvantage":{"score":0,"reason":"..."},"scalability":{"score":0,"reason":"..."},"socialImpact":{"score":0,"reason":"..."}}}');
     return lines.join('\n');
+  }
+
+  /* 修補 LLM 常見的 JSON 瑕疵：字串內未跳脫的 " 、字串內換行、彎引號、尾端多餘逗號 */
+  function repairJson(src){
+    var out = '', inStr = false, esc = false;
+    for(var i = 0; i < src.length; i++){
+      var c = src[i];
+      if(!inStr){
+        if(c === '"'){ inStr = true; out += c; }
+        else if(c === '“' || c === '”'){ inStr = true; out += '"'; }
+        else out += c;
+        continue;
+      }
+      if(esc){ out += c; esc = false; continue; }
+      if(c === '\\'){ out += c; esc = true; continue; }
+      if(c === '\n'){ out += '\\n'; continue; }
+      if(c === '\r'){ continue; }
+      if(c === '\t'){ out += '\\t'; continue; }
+      if(c === '"'){
+        var j = i + 1;
+        while(j < src.length && /\s/.test(src[j])) j++;
+        var nx = src[j];
+        if(j >= src.length || nx === ',' || nx === '}' || nx === ']' || nx === ':'){ inStr = false; out += c; }
+        else out += '\\"';
+        continue;
+      }
+      out += c;
+    }
+    return out.replace(/,\s*([}\]])/g, '$1');
   }
 
   function extractJsonObject(text){
@@ -1103,7 +1132,12 @@
     var start = cleaned.indexOf('{');
     var end = cleaned.lastIndexOf('}');
     if(start < 0 || end <= start) throw new Error('模型輸出中找不到 JSON 物件：' + text.slice(0, 120));
-    return JSON.parse(cleaned.slice(start, end + 1));
+    var body = cleaned.slice(start, end + 1);
+    try{ return JSON.parse(body); }
+    catch(e1){
+      try{ return JSON.parse(repairJson(body)); }
+      catch(e2){ throw e1; }
+    }
   }
 
   function clampScore(n){
@@ -1332,11 +1366,19 @@
     btn.disabled = true;
     report.innerHTML = '<div class="ok">呼叫 ' + AI_PROVIDERS[provider].label + '（' + escapeHtml(model) + '）中，請稍候…</div>';
 
-    callLLM(provider, model, apiKey, buildIdeaPrompt(state.kw1, state.kw2), function(attempt, status, waitSec){
+    var onRetry = function(attempt, status, waitSec){
       report.innerHTML = '<div class="warn">API 回應 ' + status + '（服務商暫時過載／限流），' + waitSec + ' 秒後自動重試（第 ' + attempt + '／2 次）…</div>';
-    }).then(function(text){
-      var parsed;
-      try{ parsed = extractJsonObject(text); }catch(e){ throw new Error('AI 回應無法解析為 JSON：' + e.message); }
+    };
+    var prompt = buildIdeaPrompt(state.kw1, state.kw2);
+    callLLM(provider, model, apiKey, prompt, onRetry).then(function(text){
+      try{ return extractJsonObject(text); }
+      catch(e){
+        report.innerHTML = '<div class="warn">AI 回應格式有誤，自動重新請求一次…</div>';
+        return callLLM(provider, model, apiKey, prompt + '\n\n（注意：上一次輸出不是合法 JSON。請嚴格輸出合法 JSON，字串內不可出現未跳脫的英文雙引號。）', onRetry).then(function(text2){
+          try{ return extractJsonObject(text2); }catch(e2){ throw new Error('AI 回應無法解析為 JSON：' + e2.message); }
+        });
+      }
+    }).then(function(parsed){
       state.result = validateAiIdea(parsed, ruleResult);
       persistResult();
       renderResult();
