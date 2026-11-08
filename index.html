@@ -1038,11 +1038,34 @@
     } else if(provider === 'gemini'){
       url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent';
       headers = {'content-type': 'application/json', 'x-goog-api-key': apiKey};
-      body = {contents: [{parts: [{text: prompt}]}], generationConfig: {responseMimeType: 'application/json'}};
+      var dimSchema = {type: 'OBJECT', properties: {score: {type: 'INTEGER'}, reason: {type: 'STRING'}}, required: ['score', 'reason']};
+      body = {contents: [{parts: [{text: prompt}]}], generationConfig: {
+        responseMimeType: 'application/json',
+        maxOutputTokens: 32768,
+        responseSchema: {
+          type: 'OBJECT',
+          properties: {
+            ideaName: {type: 'STRING'}, description: {type: 'STRING'},
+            steps: {type: 'ARRAY', items: {type: 'STRING'}},
+            dimensions: {type: 'OBJECT', properties: {
+              marketDemand: dimSchema, profitability: dimSchema, competitiveAdvantage: dimSchema,
+              scalability: dimSchema, socialImpact: dimSchema
+            }, required: ['marketDemand', 'profitability', 'competitiveAdvantage', 'scalability', 'socialImpact']}
+          },
+          required: ['ideaName', 'description', 'steps', 'dimensions'],
+          propertyOrdering: ['ideaName', 'description', 'steps', 'dimensions']
+        }
+      }};
       extract = function(d){
-        var parts = (d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts) || [];
-        var t = parts.map(function(p){ return p.text || ''; }).join('');
-        if(!t) throw new Error('回應中沒有文字內容');
+        var cand = d.candidates && d.candidates[0];
+        var parts = (cand && cand.content && cand.content.parts) || [];
+        var t = parts.filter(function(p){ return !p.thought; }).map(function(p){ return p.text || ''; }).join('');
+        var fr = cand && cand.finishReason;
+        if(!t){
+          var block = d.promptFeedback && d.promptFeedback.blockReason;
+          throw new Error('回應中沒有文字內容' + (fr ? '（finishReason：' + fr + '）' : '') + (block ? '（blockReason：' + block + '）' : ''));
+        }
+        if(fr && fr !== 'STOP') console.warn('[Gemini] finishReason =', fr, '，輸出可能被截斷');
         return t;
       };
     } else if(provider === 'openrouter'){
@@ -1127,16 +1150,44 @@
     return out.replace(/,\s*([}\]])/g, '$1');
   }
 
+  /* 輸出被截斷時：補上未結束的字串與括號，盡量救回已收到的欄位（缺的欄位由 validateAiIdea 補規則式結果） */
+  function closeTruncatedJson(src){
+    var stack = [], inStr = false, esc = false;
+    for(var i = 0; i < src.length; i++){
+      var c = src[i];
+      if(inStr){
+        if(esc) esc = false;
+        else if(c === '\\') esc = true;
+        else if(c === '"') inStr = false;
+        continue;
+      }
+      if(c === '"') inStr = true;
+      else if(c === '{' || c === '[') stack.push(c);
+      else if(c === '}' || c === ']') stack.pop();
+    }
+    var out = src;
+    if(esc) out = out.slice(0, -1);
+    if(inStr) out += '"';
+    out = out.replace(/[\s,]+$/, '');
+    out = out.replace(/,\s*"[^"]*"\s*:?\s*$/, '');   // 只剩 key 沒有 value
+    out = out.replace(/:\s*$/, ':null');
+    while(stack.length) out += (stack.pop() === '{' ? '}' : ']');
+    return out.replace(/,\s*([}\]])/g, '$1');
+  }
+
   function extractJsonObject(text){
     var cleaned = text.replace(/```json|```/g, '');
     var start = cleaned.indexOf('{');
+    if(start < 0) throw new Error('模型輸出中找不到 JSON 物件：' + text.slice(0, 120));
     var end = cleaned.lastIndexOf('}');
-    if(start < 0 || end <= start) throw new Error('模型輸出中找不到 JSON 物件：' + text.slice(0, 120));
-    var body = cleaned.slice(start, end + 1);
+    var body = end > start ? cleaned.slice(start, end + 1) : cleaned.slice(start);
     try{ return JSON.parse(body); }
     catch(e1){
-      try{ return JSON.parse(repairJson(body)); }
-      catch(e2){ throw e1; }
+      try{ return JSON.parse(repairJson(body)); }catch(e2){}
+      // 截斷：改用從 { 到全文結尾，補齊後再解析
+      var tail = repairJson(cleaned.slice(start).trim());
+      try{ return JSON.parse(closeTruncatedJson(tail)); }
+      catch(e3){ throw e1; }
     }
   }
 
