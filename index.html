@@ -224,13 +224,20 @@
   }
   .idea-name{font-size:22px;font-weight:800;margin:0 0 10px;color:var(--text);}
   .idea-desc{font-size:14.5px;color:var(--text-dim);margin:0 0 18px;line-height:1.8;}
+  .sub-head{font-size:15px;font-weight:800;color:var(--accent);margin:22px 0 10px;}
+  .detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-bottom:6px;}
+  .detail-card{background:var(--bg-alt);border:1px solid var(--line-soft);border-radius:10px;padding:12px 14px;}
+  .detail-card h4{margin:0 0 6px;font-size:13.5px;color:var(--text);}
+  .detail-card p{margin:0;font-size:13.5px;color:var(--text-dim);line-height:1.75;white-space:pre-line;}
+  .idea-desc{white-space:pre-line;}
+  .idea-steps li strong{color:var(--text);}
   .idea-steps{margin:0 0 4px;padding-left:0;list-style:none;counter-reset:step;}
   .idea-steps li{
     counter-increment:step;position:relative;padding:10px 14px 10px 44px;margin-bottom:8px;
     background:var(--bg-alt);border:1px solid var(--line-soft);border-radius:8px;font-size:13.5px;color:var(--text-dim);line-height:1.6;
   }
   .idea-steps li::before{
-    content:counter(step);position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    content:counter(step);position:absolute;left:12px;top:11px;
     width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);
     font-family:var(--font-mono);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;
   }
@@ -421,6 +428,13 @@
 
     <h2 class="idea-name" id="ideaName"></h2>
     <p class="idea-desc" id="ideaDesc"></p>
+
+    <div id="ideaDetailsWrap">
+      <h3 class="sub-head">📋 詳細說明</h3>
+      <div class="detail-grid" id="ideaDetails"></div>
+    </div>
+
+    <h3 class="sub-head">🪜 打造步驟</h3>
     <ol class="idea-steps" id="ideaSteps"></ol>
 
     <div class="score-hero">
@@ -915,6 +929,62 @@
     ]}
   ];
 
+  /* 每個階段的完成標準（規則式步驟會接在做法後面，讓步驟更具體） */
+  var STEP_GOALS = [
+    '完成標準：至少 6 成受訪者表示「願意試用或購買」，並整理出前 3 名最常被提到的需求與疑慮。所需資源：訪談大綱、問卷表單、約 2 週時間。',
+    '完成標準：至少 10 位早期使用者實際試用，回饋中「會推薦給朋友」的比例過半。所需資源：樣品或簡易網頁、小額製作預算、回饋表單。',
+    '完成標準：確定主力售價與 1-2 個主要通路，試賣期的毛利率達到預期（建議至少 40%）。所需資源：競品價格表、成本試算表、通路上架流程。',
+    '完成標準：累積第一批 100 位追蹤者或 30 位付費顧客，並找出成本最低、轉換最好的一種獲客管道。所需資源：內容素材、小額廣告預算、合作名單。',
+    '完成標準：回購率或續訂率穩定，每月營收連續 3 個月成長，才把模式複製到下一個品類或地區。所需資源：會員系統、標準作業流程（SOP）、擴張資金規劃。'
+  ];
+
+  /* 詳細說明欄位：AI 與規則式共用同一組 key */
+  var DETAIL_FIELDS = [
+    {id:'targetCustomers',  label:'目標客群與使用情境', icon:'👥'},
+    {id:'valueProposition', label:'核心價值主張',       icon:'💎'},
+    {id:'productService',   label:'產品／服務內容',     icon:'📦'},
+    {id:'revenueModel',     label:'獲利模式與定價',     icon:'💵'},
+    {id:'startupCost',      label:'初期投入與成本結構', icon:'🧮'},
+    {id:'competition',      label:'競爭對手與差異化',   icon:'⚔️'},
+    {id:'risks',            label:'主要風險與因應對策', icon:'⚠️'},
+    {id:'kpis',             label:'前三個月驗證指標',   icon:'📈'}
+  ];
+
+  var DETAIL_TEMPLATES = {
+    targetCustomers: [
+      '主要客群是 25-40 歲、已經習慣消費「{kw1}」、但覺得市面選擇大同小異的上班族與年輕家庭。他們常在下班後或週末尋找能放鬆、能拍照分享的體驗，「{kw2}」的元素正好提供新鮮感。次要客群是送禮需求者，會因為話題性而購買。',
+      '鎖定兩群人：一是「{kw1}」的重度使用者，願意為更好的體驗多付一點錢；二是對「{kw2}」本身有興趣、原本不一定會接觸「{kw1}」的族群。前者帶來穩定營收，後者帶來新客與社群聲量。典型使用情境是假日出遊、朋友聚會與節慶送禮。'
+    ],
+    valueProposition: [
+      '解決的痛點是「{kw1}很普遍，但缺少讓人記得的理由」。透過「{kw2}」的主題，讓顧客買到的不只是{kw1}本身，而是一段有故事、可以分享的體驗。對顧客來說價值是「新鮮＋情感連結」，對品牌來說則是「不必削價競爭的差異化」。',
+      '一句話價值主張：「讓{kw1}多一點{kw2}的驚喜」。顧客原本在{kw1}上的選擇多半只比價格與方便，本方案改用「{kw2}」帶出的主題感、收藏感與話題性，讓顧客願意為體驗付費，也願意主動推薦。'
+    ],
+    productService: [
+      '核心產品是以「{kw2}」為主題的{kw1}系列，分成入門款（低價嘗鮮）、主力款（日常消費）與限定款（節慶或聯名）三層。搭配的服務包括主題體驗活動、會員集點與客製化選項，讓顧客從第一次購買到長期回購都有對應的商品。',
+      '第一階段只做 3-5 個最能代表「{kw1}×{kw2}」概念的品項，確認受歡迎後再擴充。周邊可延伸出體驗課程、DIY 組合包或訂閱盒，讓同一個主題能在不同價格帶與不同消費場景中被購買。'
+    ],
+    revenueModel: [
+      '主要收入來自產品單次銷售，建議定價比一般{kw1}高 15-30%，用「{kw2}」帶來的主題價值支撐溢價。輔助收入包括訂閱制（每月固定出貨）、限定款預購與企業合作客製。目標是讓訂閱與回購佔營收 4 成以上，降低對新客的依賴。',
+      '採「入門款引流＋主力款獲利＋限定款拉高客單」的組合定價。入門款接近成本、用來降低嘗試門檻；主力款維持 45-60% 毛利；限定款以稀缺性定高價。另可向品牌或場地收取聯名、活動合作費，增加非產品收入。'
+    ],
+    startupCost: [
+      '初期主要支出：產品開發與打樣、主題視覺設計、首批庫存、社群內容製作與小額廣告測試。建議先用快閃攤位或線上預購測水溫，把固定成本（租金、人事）壓到最低，等驗證有穩定訂單後再投入店面或大量生產。',
+      '成本結構可分為三塊：變動成本（原料、包裝、物流）、行銷成本（內容、廣告、合作）、固定成本（場地、設備、人力）。初期建議以接單生產或小批量製作控制庫存風險，並每月檢視單位成本，確保毛利不被「{kw2}」主題的客製成本吃掉。'
+    ],
+    competition: [
+      '直接競爭者是現有的{kw1}業者，他們有價格與通路優勢；間接競爭者是其他主打主題體驗的品牌。本方案的差異在於「{kw2}」這個跨界主題，不跟大廠比價格，而是比故事與體驗。要持續累積品牌識別、社群與獨家合作，才不容易被模仿。',
+      '市面上的{kw1}多半在價格、方便性上競爭，很少有人用「{kw2}」切入。這是短期的空白市場，但門檻不高，可能被快速跟進。因此要盡早建立三道護城河：一致的品牌視覺與故事、會員社群的情感連結、與在地夥伴或創作者的獨家合作。'
+    ],
+    risks: [
+      '風險一：「{kw2}」主題只有短期話題，熱度退了就沒人買——對策是定期更新主題與限定款。風險二：客製元素讓成本過高——對策是把主題元素模組化、共用包材。風險三：被同業模仿——對策是先累積會員與社群，讓顧客認的是品牌而不是點子。',
+      '最大風險是市場接受度不如預期，因此前期一定要先做小規模測試再投入資金。其次是庫存與現金流壓力，建議採預購或小批量。最後是品牌定位模糊，「{kw1}」與「{kw2}」若結合得太牽強，顧客會看不懂，所以文案與視覺要清楚說明這個組合的意義。'
+    ],
+    kpis: [
+      '第 1 個月：完成 20 份以上訪談、概念貼文互動率高於帳號平均。第 2 個月：MVP 試賣達到 30 筆訂單、顧客滿意度 4 分以上（5 分制）。第 3 個月：回購率達 20%、每位新客的獲客成本低於首單毛利。三項都達標再擴大投入。',
+      '建議追蹤四個數字：詢問轉成交的轉換率、平均客單價、30 天內回購率、每位顧客的獲客成本。前三個月目標可設為轉換率 5% 以上、回購率 15% 以上、獲客成本不超過首單毛利的一半，未達標就回頭調整定位或定價。'
+    ]
+  };
+
   var REASON_TEMPLATES = {
     marketDemand: {
       low: ['「{kw2}」目前對多數消費者來說仍偏小眾，需要額外教育市場才能讓「{kw1}」的潛在客群理解這個組合的價值。','「{kw1}」加上「{kw2}」的需求還沒有被驗證過，目前只能算是一個尚待市場測試的假設。'],
@@ -951,8 +1021,16 @@
     var bucket = score <= 2 ? 'low' : (score === 3 ? 'mid' : 'high');
     var pool = REASON_TEMPLATES[dimId][bucket];
     var reasonTpl = pool[hashString(kw1 + '::' + kw2.word + '::' + dimId + '::r') % pool.length];
-    return { score: score, reason: fillTpl(reasonTpl, kw1, kw2.word), source:'rule' };
+    return { score: score, reason: fillTpl(reasonTpl + REASON_TIPS[dimId], kw1, kw2.word), source:'rule' };
   }
+
+  var REASON_TIPS = {
+    marketDemand: '提升建議：先用問卷與社群貼文量化需求，找出最願意付費的那一群人，再集中資源服務他們。',
+    profitability: '提升建議：把成本拆成原料、包裝、行銷三塊逐項試算，確認每賣出一份的實際毛利，再決定定價與促銷方式。',
+    competitiveAdvantage: '提升建議：把「{kw2}」的故事寫成品牌核心，搭配會員社群與獨家合作，讓別人就算模仿點子也複製不了關係。',
+    scalability: '提升建議：把最受歡迎的做法整理成標準作業流程（SOP）與固定模組，複製到新通路時才不必每次重新設計。',
+    socialImpact: '提升建議：可以加入在地採購、環保包材或部分收益回饋等機制，並在品牌故事中清楚說明，增加顧客認同感。'
+  };
 
   function generateRuleIdea(kw1, kw2){
     var base = kw1 + '::' + kw2.word;
@@ -963,11 +1041,16 @@
     var steps = STEP_STAGES.map(function(stage, i){
       var variants = stage.templates;
       var tpl = variants[hashString(base + '::step' + i) % variants.length];
-      return fillTpl(tpl, kw1, kw2.word);
+      return stage.label + '：' + fillTpl(tpl, kw1, kw2.word) + '\n' + STEP_GOALS[i];
+    });
+    var details = {};
+    DETAIL_FIELDS.forEach(function(f){
+      var pool = DETAIL_TEMPLATES[f.id];
+      details[f.id] = fillTpl(pool[hashString(base + '::detail::' + f.id) % pool.length], kw1, kw2.word);
     });
     var dims = {};
     DIMENSIONS.forEach(function(d){ dims[d.id] = scoreDimension(kw1, kw2, d.id); });
-    return { ideaName: ideaName, description: description, steps: steps, dims: dims };
+    return { ideaName: ideaName, description: description, details: details, steps: steps, dims: dims };
   }
 
   /* ---------- BYOK：串接 Claude／OpenAI／Gemini／OpenRouter（金鑰只存本機瀏覽器） ---------- */
@@ -1019,7 +1102,7 @@
         'content-type': 'application/json', 'x-api-key': apiKey,
         'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true'
       };
-      body = {model: model, max_tokens: 4000, messages: [{role: 'user', content: prompt}]};
+      body = {model: model, max_tokens: 16000, messages: [{role: 'user', content: prompt}]};
       extract = function(d){
         if(d.stop_reason === 'refusal') throw new Error('模型拒絕了這個請求（refusal）');
         var t = (d.content || []).filter(function(b){ return b.type === 'text'; }).map(function(b){ return b.text; }).join('');
@@ -1046,14 +1129,17 @@
           type: 'OBJECT',
           properties: {
             ideaName: {type: 'STRING'}, description: {type: 'STRING'},
+            details: {type: 'OBJECT', properties: DETAIL_FIELDS.reduce(function(o, f){ o[f.id] = {type: 'STRING'}; return o; }, {}),
+              required: DETAIL_FIELDS.map(function(f){ return f.id; }),
+              propertyOrdering: DETAIL_FIELDS.map(function(f){ return f.id; })},
             steps: {type: 'ARRAY', items: {type: 'STRING'}},
             dimensions: {type: 'OBJECT', properties: {
               marketDemand: dimSchema, profitability: dimSchema, competitiveAdvantage: dimSchema,
               scalability: dimSchema, socialImpact: dimSchema
             }, required: ['marketDemand', 'profitability', 'competitiveAdvantage', 'scalability', 'socialImpact']}
           },
-          required: ['ideaName', 'description', 'steps', 'dimensions'],
-          propertyOrdering: ['ideaName', 'description', 'steps', 'dimensions']
+          required: ['ideaName', 'description', 'details', 'steps', 'dimensions'],
+          propertyOrdering: ['ideaName', 'description', 'details', 'steps', 'dimensions']
         }
       }};
       extract = function(d){
@@ -1112,12 +1198,19 @@
     lines.push('關鍵字1：' + kw1);
     lines.push('關鍵字2：' + kw2.word + '（類別：' + kw2.category + '）');
     lines.push('');
-    lines.push('請提供：一個吸睛的創意名稱、一段150-250字的描述、5個循序漸進的打造步驟（每步驟30-60字，涵蓋從驗證到擴張的完整流程）。');
-    lines.push('並針對以下5個構面各評 1-5 分整數，每項都要給一段具體評分理由（不要空泛套話，要點出跟這個創意直接相關的原因）：');
+    var detailLines = DETAIL_FIELDS.map(function(f){ return '- ' + f.id + '（' + f.label + '）'; }).join('\n');
+    lines.push('請用繁體中文（台灣用語）提供詳細、具體、可以照著執行的內容：');
+    lines.push('1. ideaName：一個吸睛的創意名稱。');
+    lines.push('2. description：300-450字的完整描述，說明這是什麼生意、為什麼「' + kw1 + '」和「' + kw2.word + '」結合起來有意義、顧客會得到什麼體驗。');
+    lines.push('3. details：以下8個面向各寫150-250字，要有具體的人群、數字範圍、做法或例子，不要空泛套話：');
+    lines.push(detailLines);
+    lines.push('   其中 revenueModel 要寫出建議價格帶或毛利率範圍；startupCost 要列出主要支出項目與控制成本的方法；risks 至少列3個風險並各配一個對策；kpis 要寫出可量化的目標數字。');
+    lines.push('4. steps：5個循序漸進的打造步驟，涵蓋需求驗證→原型/MVP→通路定價→行銷獲客→擴張永續。每步驟100-180字，格式為「階段名稱：具體做法……完成標準：……所需資源：……」。');
+    lines.push('5. dimensions：針對以下5個構面各評 1-5 分整數，每項的 reason 寫120-200字，先說明給這個分數的具體原因（要跟這個創意直接相關），再給一個提升這項分數的建議：');
     lines.push(dimLines);
     lines.push('');
     lines.push('請只輸出一個 JSON 物件，不要 markdown 圍欄、不要任何其他文字。文字內容中若要引用詞語請用「」，不要使用英文雙引號 "，也不要在字串中換行。格式固定為：');
-    lines.push('{"ideaName":"...","description":"...","steps":["...","...","...","...","..."],"dimensions":{"marketDemand":{"score":0,"reason":"..."},"profitability":{"score":0,"reason":"..."},"competitiveAdvantage":{"score":0,"reason":"..."},"scalability":{"score":0,"reason":"..."},"socialImpact":{"score":0,"reason":"..."}}}');
+    lines.push('{"ideaName":"...","description":"...","details":{' + DETAIL_FIELDS.map(function(f){ return '"' + f.id + '":"..."'; }).join(',') + '},"steps":["...","...","...","...","..."],"dimensions":{"marketDemand":{"score":0,"reason":"..."},"profitability":{"score":0,"reason":"..."},"competitiveAdvantage":{"score":0,"reason":"..."},"scalability":{"score":0,"reason":"..."},"socialImpact":{"score":0,"reason":"..."}}}');
     return lines.join('\n');
   }
 
@@ -1199,9 +1292,9 @@
 
   function validateAiIdea(parsed, ruleResult){
     var ideaName = typeof parsed.ideaName === 'string' ? parsed.ideaName.trim().slice(0, 60) : '';
-    var description = typeof parsed.description === 'string' ? parsed.description.trim().slice(0, 600) : '';
+    var description = typeof parsed.description === 'string' ? parsed.description.trim().slice(0, 1500) : '';
     var steps = Array.isArray(parsed.steps)
-      ? parsed.steps.filter(function(s){ return typeof s === 'string' && s.trim(); }).slice(0, 8).map(function(s){ return s.trim().slice(0, 200); })
+      ? parsed.steps.filter(function(s){ return typeof s === 'string' && s.trim(); }).slice(0, 8).map(function(s){ return s.trim().slice(0, 600); })
       : [];
 
     var missing = [];
@@ -1209,11 +1302,19 @@
     if(!description){ description = ruleResult.description; missing.push('創意描述'); }
     if(steps.length < 3){ steps = ruleResult.steps; missing.push('打造步驟'); }
 
+    var details = {};
+    DETAIL_FIELDS.forEach(function(f){
+      var v = parsed.details && parsed.details[f.id];
+      v = typeof v === 'string' ? v.trim().slice(0, 1000) : '';
+      if(v) details[f.id] = v;
+      else { details[f.id] = ruleResult.details[f.id]; missing.push(f.label); }
+    });
+
     var dims = {};
     DIMENSIONS.forEach(function(d){
       var src = parsed.dimensions && parsed.dimensions[d.id];
       var score = src ? clampScore(src.score) : null;
-      var reason = src && typeof src.reason === 'string' ? src.reason.trim().slice(0, 300) : '';
+      var reason = src && typeof src.reason === 'string' ? src.reason.trim().slice(0, 800) : '';
       if(score !== null && reason){
         dims[d.id] = { score: score, reason: reason, source: 'ai' };
       } else {
@@ -1222,7 +1323,7 @@
       }
     });
 
-    return { ideaName: ideaName, description: description, steps: steps, dims: dims, missing: missing, textSource: missing.length ? 'mixed' : 'ai' };
+    return { ideaName: ideaName, description: description, details: details, steps: steps, dims: dims, missing: missing, textSource: missing.length ? 'mixed' : 'ai' };
   }
 
   function computeOverall(dims){
@@ -1259,8 +1360,16 @@
     lines.push('【創意描述】');
     lines.push(r.description);
     lines.push('');
+    if(r.details){
+      DETAIL_FIELDS.forEach(function(f){
+        if(!r.details[f.id]) return;
+        lines.push('【' + f.label + '】');
+        lines.push(r.details[f.id]);
+        lines.push('');
+      });
+    }
     lines.push('【打造步驟】');
-    r.steps.forEach(function(s, i){ lines.push((i + 1) + '. ' + s); });
+    r.steps.forEach(function(s, i){ lines.push((i + 1) + '. ' + s.replace(/\n/g, '\n   ')); });
     lines.push('');
     lines.push('【五構面評分】');
     DIMENSIONS.forEach(function(d){
@@ -1298,7 +1407,12 @@
     html += '<div class="pr-meta">關鍵字1：' + escapeHtml(kw1) + '　｜　關鍵字2：' + escapeHtml(kw2.word) + '（' + escapeHtml(kw2.category) + '）　｜　產生時間：' + escapeHtml(new Date().toLocaleString()) + '</div>';
     html += '<h2>創意名稱</h2><p><strong>' + escapeHtml(r.ideaName) + '</strong></p>';
     html += '<h2>創意描述</h2><p>' + escapeHtml(r.description) + '</p>';
-    html += '<h2>打造步驟</h2><ol>' + r.steps.map(function(s){ return '<li>' + escapeHtml(s) + '</li>'; }).join('') + '</ol>';
+    if(r.details){
+      DETAIL_FIELDS.forEach(function(f){
+        if(r.details[f.id]) html += '<h2>' + escapeHtml(f.label) + '</h2><p>' + escapeHtml(r.details[f.id]).replace(/\n/g, '<br>') + '</p>';
+      });
+    }
+    html += '<h2>打造步驟</h2><ol>' + r.steps.map(function(s){ return '<li>' + formatStep(s) + '</li>'; }).join('') + '</ol>';
     html += '<h2>五構面評分</h2><table><tr><th>構面</th><th>分數</th><th>理由</th></tr>';
     DIMENSIONS.forEach(function(d){
       var v = r.dims[d.id];
@@ -1340,6 +1454,12 @@
     }).join('');
   }
 
+  /* 步驟開頭「階段名稱：」加粗，換行保留 */
+  function formatStep(s){
+    var html = escapeHtml(s).replace(/\n/g, '<br>');
+    return html.replace(/^([^：<]{1,12})：/, '<strong>$1：</strong>');
+  }
+
   function renderResult(){
     var r = state.result;
     var panel = $('resultPanel');
@@ -1358,7 +1478,12 @@
 
     $('ideaName').textContent = r.ideaName;
     $('ideaDesc').textContent = r.description;
-    $('ideaSteps').innerHTML = r.steps.map(function(s){ return '<li>' + escapeHtml(s) + '</li>'; }).join('');
+    var hasDetails = !!(r.details && DETAIL_FIELDS.some(function(f){ return r.details[f.id]; }));
+    $('ideaDetailsWrap').style.display = hasDetails ? 'block' : 'none';
+    $('ideaDetails').innerHTML = hasDetails ? DETAIL_FIELDS.filter(function(f){ return r.details[f.id]; }).map(function(f){
+      return '<div class="detail-card"><h4>' + f.icon + ' ' + f.label + '</h4><p>' + escapeHtml(r.details[f.id]) + '</p></div>';
+    }).join('') : '';
+    $('ideaSteps').innerHTML = r.steps.map(function(s){ return '<li>' + formatStep(s) + '</li>'; }).join('');
 
     var dimGrid = $('dimGrid');
     dimGrid.innerHTML = DIMENSIONS.map(function(d){
@@ -1403,7 +1528,7 @@
     var btn = $('generateBtn');
 
     if(!apiKey){
-      state.result = { ideaName: ruleResult.ideaName, description: ruleResult.description, steps: ruleResult.steps, dims: ruleResult.dims, missing: [], textSource: 'rule' };
+      state.result = { ideaName: ruleResult.ideaName, description: ruleResult.description, details: ruleResult.details, steps: ruleResult.steps, dims: ruleResult.dims, missing: [], textSource: 'rule' };
       persistResult();
       renderResult();
       report.innerHTML = '';
@@ -1439,7 +1564,7 @@
       if(err.name === 'TimeoutError') msg = '請求逾時（180秒），已改用示範版本，可重試或換模型';
       else if(/ISO-8859-1|non.*code point/i.test(err.message || '')) msg = 'API 金鑰或模型名稱包含不可用的字元，請重新確認貼上內容只有金鑰／模型 ID 本身——已改用示範版本';
       else msg = (err.message || String(err)) + '——已自動改用示範版本，可重試或檢查金鑰/模型設定';
-      state.result = { ideaName: ruleResult.ideaName, description: ruleResult.description, steps: ruleResult.steps, dims: ruleResult.dims, missing: [], textSource: 'rule' };
+      state.result = { ideaName: ruleResult.ideaName, description: ruleResult.description, details: ruleResult.details, steps: ruleResult.steps, dims: ruleResult.dims, missing: [], textSource: 'rule' };
       persistResult();
       renderResult();
       report.innerHTML = '<div class="bad">' + escapeHtml(msg) + '</div>';
